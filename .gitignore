@@ -1,0 +1,29 @@
+# Proyecto
+prompt-adultingxp-claude-code.md
+
+# Xcode
+*.xcuserstate
+xcuserdata/
+DerivedData/
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Build artifacts
+build/
+*.o
+*.d
+
+# Instruments
+timeline.xctimeline
+playground.xcplayground
