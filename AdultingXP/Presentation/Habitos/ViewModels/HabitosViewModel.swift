@@ -4,6 +4,9 @@ import Observation
 @Observable
 final class HabitosViewModel {
 
+    private let habitoRepo: any HabitoRepositoryProtocol
+    private let registroRepo: any RegistroPuntosRepositoryProtocol
+
     var habitos: [Habito] = []
     var registros: [RegistroPuntos] = []
 
@@ -11,35 +14,38 @@ final class HabitosViewModel {
         registros.reduce(0) { $0 + $1.cantidad }
     }
 
-    init() {
-        habitos   = JSONStore.load([Habito].self,          fromFile: "habitos.json")   ?? []
-        registros = JSONStore.load([RegistroPuntos].self,  fromFile: "registros.json") ?? []
+    init(
+        habitoRepo: any HabitoRepositoryProtocol = HabitoRepository(),
+        registroRepo: any RegistroPuntosRepositoryProtocol = RegistroPuntosRepository()
+    ) {
+        self.habitoRepo = habitoRepo
+        self.registroRepo = registroRepo
+        habitos = habitoRepo.cargar()
+        registros = registroRepo.cargar()
     }
 
     // MARK: — Acciones
 
     func agregar(_ habito: Habito) {
         habitos.append(habito)
-        JSONStore.save(habitos, toFile: "habitos.json")
+        habitoRepo.guardar(habitos)
     }
 
     func actualizar(_ habito: Habito) {
         guard let index = habitos.firstIndex(where: { $0.id == habito.id }) else { return }
         habitos[index] = habito
-        JSONStore.save(habitos, toFile: "habitos.json")
+        habitoRepo.guardar(habitos)
     }
 
     func eliminar(_ habito: Habito) {
         habitos.removeAll { $0.id == habito.id }
-        JSONStore.save(habitos, toFile: "habitos.json")
-        // Los RegistroPuntos históricos se conservan — son el ledger inmutable.
+        habitoRepo.guardar(habitos)
     }
 
     func completar(_ habito: Habito) {
         guard let index = habitos.firstIndex(where: { $0.id == habito.id }) else { return }
-
         habitos[index].fechaUltimaCompletacion = .now
-        JSONStore.save(habitos, toFile: "habitos.json")
+        habitoRepo.guardar(habitos)
 
         let delta = habito.esBueno ? habito.puntajeBase : -habito.puntajeBase
         let registro = RegistroPuntos(
@@ -48,7 +54,7 @@ final class HabitosViewModel {
             origen: .habito
         )
         registros.append(registro)
-        JSONStore.save(registros, toFile: "registros.json")
+        registroRepo.guardar(registros)
     }
 
     // MARK: — Consultas
