@@ -48,6 +48,11 @@ final class FinanzasViewModel {
         compraRepo.guardar(compras)
     }
 
+    func eliminarCompra(_ compra: Compra) {
+        compras.removeAll { $0.id == compra.id }
+        compraRepo.guardar(compras)
+    }
+
     // MARK: — Consultas por tarjeta
 
     func compras(de tarjeta: TarjetaCredito) -> [Compra] {

@@ -6,6 +6,8 @@ struct TarjetaDetailView: View {
 
     @State private var mostrandoAgregarCompra = false
     @State private var mostrandoSimulador = false
+    @State private var compraAEliminar: Compra? = nil
+    @State private var mostrandoConfirmacion = false
 
     private var comprasActivas: [Compra] {
         viewModel.compras(de: tarjeta).filter { !$0.estaPagada(diaCorte: tarjeta.diaCorte) }
@@ -42,6 +44,14 @@ struct TarjetaDetailView: View {
                 Section("Compras activas") {
                     ForEach(comprasActivas) { compra in
                         CompraRow(compra: compra, diaCorte: tarjeta.diaCorte)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    compraAEliminar = compra
+                                    mostrandoConfirmacion = true
+                                } label: {
+                                    Label("Eliminar", systemImage: "trash")
+                                }
+                            }
                     }
                 }
             }
@@ -50,6 +60,14 @@ struct TarjetaDetailView: View {
                 Section("Pagadas") {
                     ForEach(comprasPagadas) { compra in
                         CompraRow(compra: compra, diaCorte: tarjeta.diaCorte)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    compraAEliminar = compra
+                                    mostrandoConfirmacion = true
+                                } label: {
+                                    Label("Eliminar", systemImage: "trash")
+                                }
+                            }
                     }
                 }
             }
@@ -81,6 +99,18 @@ struct TarjetaDetailView: View {
             AgregarCompraView(tarjetaId: tarjeta.id) { compra in
                 viewModel.agregarCompra(compra)
             }
+        }
+        .confirmationDialog(
+            "Eliminar «\(compraAEliminar?.descripcion ?? "")»",
+            isPresented: $mostrandoConfirmacion,
+            titleVisibility: .visible
+        ) {
+            Button("Eliminar", role: .destructive) {
+                if let compra = compraAEliminar { viewModel.eliminarCompra(compra) }
+                compraAEliminar = nil
+            }
+        } message: {
+            Text("Esta acción no se puede deshacer.")
         }
     }
 }
