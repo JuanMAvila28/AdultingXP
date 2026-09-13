@@ -2,14 +2,37 @@ import SwiftUI
 
 struct HabitosView: View {
     @State private var viewModel = HabitosViewModel()
+    @State private var mostrandoCrear = false
 
     var body: some View {
         NavigationStack {
-            List(viewModel.habitos) { habito in
-                HabitoRow(habito: habito)
+            Group {
+                if viewModel.habitos.isEmpty {
+                    ContentUnavailableView(
+                        "Sin hábitos",
+                        systemImage: "checkmark.circle",
+                        description: Text("Toca + para agregar tu primer hábito")
+                    )
+                } else {
+                    List(viewModel.habitos) { habito in
+                        HabitoRow(habito: habito)
+                    }
+                    .listStyle(.insetGrouped)
+                }
             }
-            .listStyle(.insetGrouped)
             .navigationTitle("Hábitos")
+            .toolbar {
+                ToolbarItem(placement: .primaryAction) {
+                    Button("Agregar", systemImage: "plus") {
+                        mostrandoCrear = true
+                    }
+                }
+            }
+            .sheet(isPresented: $mostrandoCrear) {
+                CrearHabitoView { habito in
+                    viewModel.agregar(habito)
+                }
+            }
         }
     }
 }
