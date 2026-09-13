@@ -3,6 +3,7 @@ import SwiftUI
 struct FinanzasView: View {
     @State private var viewModel = FinanzasViewModel()
     @State private var mostrandoCrear = false
+    @State private var tarjetaAEditar: TarjetaCredito? = nil
     @State private var tarjetaAEliminar: TarjetaCredito? = nil
     @State private var mostrandoConfirmacion = false
 
@@ -30,6 +31,11 @@ struct FinanzasView: View {
             .sheet(isPresented: $mostrandoCrear) {
                 CrearTarjetaView { tarjeta in
                     viewModel.agregar(tarjeta)
+                }
+            }
+            .sheet(item: $tarjetaAEditar) { tarjeta in
+                EditarTarjetaView(tarjeta: tarjeta) { actualizada in
+                    viewModel.actualizar(actualizada)
                 }
             }
             .confirmationDialog(
@@ -76,6 +82,12 @@ struct FinanzasView: View {
                         bottom: Spacing.sm,
                         trailing: Spacing.md
                     ))
+                    .swipeActions(edge: .leading) {
+                        Button { tarjetaAEditar = tarjeta } label: {
+                            Label("Editar", systemImage: "pencil")
+                        }
+                        .tint(.blue)
+                    }
                     .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                         Button(role: .destructive) {
                             tarjetaAEliminar = tarjeta

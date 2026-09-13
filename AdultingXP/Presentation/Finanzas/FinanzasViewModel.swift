@@ -30,6 +30,12 @@ final class FinanzasViewModel {
         tarjetaRepo.guardar(tarjetas)
     }
 
+    func actualizar(_ tarjeta: TarjetaCredito) {
+        guard let i = tarjetas.firstIndex(where: { $0.id == tarjeta.id }) else { return }
+        tarjetas[i] = tarjeta
+        tarjetaRepo.guardar(tarjetas)
+    }
+
     func eliminar(_ tarjeta: TarjetaCredito) {
         compras.removeAll { $0.tarjetaId == tarjeta.id }
         compraRepo.guardar(compras)
