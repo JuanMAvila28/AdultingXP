@@ -5,6 +5,7 @@ import Observation
 final class WishlistViewModel {
     private let wishlistRepo: any WishlistRepositoryProtocol
     private let registroRepo: any RegistroPuntosRepositoryProtocol
+    private let reclamarUseCase: ReclamarItemWishlistUseCase
 
     var items: [ItemWishlist] = []
     var registros: [RegistroPuntos] = []
@@ -27,6 +28,7 @@ final class WishlistViewModel {
     ) {
         self.wishlistRepo = wishlistRepo
         self.registroRepo = registroRepo
+        self.reclamarUseCase = ReclamarItemWishlistUseCase(wishlistRepo: wishlistRepo, registroRepo: registroRepo)
         items = wishlistRepo.cargar()
         registros = registroRepo.cargar()
     }
@@ -41,6 +43,19 @@ final class WishlistViewModel {
     func eliminar(_ item: ItemWishlist) {
         items.removeAll { $0.id == item.id }
         wishlistRepo.guardar(items)
+    }
+
+    func reclamar(_ item: ItemWishlist) {
+        guard puedeReclamar(item) else { return }
+        let resultado = reclamarUseCase.ejecutar(
+            item: item,
+            todosLosItems: items,
+            registrosActuales: registros
+        )
+        if let i = items.firstIndex(where: { $0.id == resultado.itemActualizado.id }) {
+            items[i] = resultado.itemActualizado
+        }
+        registros.append(resultado.nuevoRegistro)
     }
 
     // MARK: — Consultas

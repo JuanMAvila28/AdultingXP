@@ -61,7 +61,8 @@ struct WishlistView: View {
                         ItemWishlistRow(
                             item: item,
                             progreso: viewModel.progreso(para: item),
-                            puedeReclamar: viewModel.puedeReclamar(item)
+                            puedeReclamar: viewModel.puedeReclamar(item),
+                            onReclamar: { viewModel.reclamar(item) }
                         )
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
@@ -119,6 +120,7 @@ private struct ItemWishlistRow: View {
     let item: ItemWishlist
     let progreso: Double
     let puedeReclamar: Bool
+    var onReclamar: (() -> Void)? = nil
 
     @ScaledMetric private var emojiFrame: CGFloat = 36
 
@@ -146,9 +148,13 @@ private struct ItemWishlistRow: View {
                         .font(.title2)
                         .foregroundStyle(Color.appPositive)
                 } else if puedeReclamar {
-                    Image(systemName: "gift.fill")
-                        .font(.title2)
-                        .foregroundStyle(Color.appAccent)
+                    Button(action: { onReclamar?() }) {
+                        Image(systemName: "gift.fill")
+                            .font(.title2)
+                            .foregroundStyle(Color.appAccent)
+                    }
+                    .buttonStyle(.plain)
+                    .sensoryFeedback(.success, trigger: item.reclamado)
                 }
             }
 
