@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 // MARK: — ViewModel
 
@@ -58,6 +59,19 @@ private final class ResumenViewModel {
         return min(1, max(0, Double(balanceGlobal) / Double(item.costoEnPuntos)))
     }
 
+    // MARK: Gráfica
+    var puntosUltimos7Dias: [(fecha: Date, total: Int)] {
+        let cal = Calendar.current
+        let hoy = cal.startOfDay(for: .now)
+        return (0..<7).reversed().map { diasAtras in
+            let dia = cal.date(byAdding: .day, value: -diasAtras, to: hoy)!
+            let total = registros
+                .filter { cal.isDate($0.fecha, inSameDayAs: dia) }
+                .reduce(0) { $0 + $1.cantidad }
+            return (fecha: dia, total: total)
+        }
+    }
+
     // MARK: Finanzas
     var deudaTotal: Double {
         tarjetas.reduce(0) { acum, tarjeta in
@@ -78,6 +92,7 @@ struct ResumenView: View {
         NavigationStack {
             List {
                 balanceSection
+                graficaSection
                 if !vm.habitos.isEmpty  { habitosSection }
                 if !vm.tareas.isEmpty   { tareasSection }
                 if let meta = vm.proximaMeta { wishlistSection(meta) }
@@ -116,6 +131,34 @@ struct ResumenView: View {
                 }
                 .padding(.vertical, Spacing.xs)
             }
+        }
+    }
+
+    // MARK: — Gráfica semanal
+
+    private var graficaSection: some View {
+        Section("Últimos 7 días") {
+            Chart(vm.puntosUltimos7Dias, id: \.fecha) { punto in
+                BarMark(
+                    x: .value("Día", punto.fecha, unit: .day),
+                    y: .value("Pts", punto.total)
+                )
+                .foregroundStyle(punto.total >= 0 ? Color.appPositive : Color.appNegative)
+                .cornerRadius(4)
+            }
+            .chartXAxis {
+                AxisMarks(values: .stride(by: .day)) {
+                    AxisValueLabel(format: .dateTime.weekday(.narrow), centered: true)
+                }
+            }
+            .chartYAxis {
+                AxisMarks { value in
+                    AxisGridLine()
+                    AxisValueLabel()
+                }
+            }
+            .frame(height: 140)
+            .padding(.vertical, Spacing.sm)
         }
     }
 
