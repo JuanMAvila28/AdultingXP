@@ -87,11 +87,14 @@ struct HabitosView: View {
             ForEach(viewModel.habitosAgrupados, id: \.categoria) { grupo in
                 Section(grupo.categoria) {
                     ForEach(grupo.items) { habito in
-                        HabitoRow(
-                            habito: habito,
-                            completadoHoy: viewModel.estaCompletadoHoy(habito),
-                            onCompletar: { viewModel.completar(habito) }
-                        )
+                        ZStack(alignment: .leading) {
+                            NavigationLink(value: habito) { EmptyView() }.opacity(0)
+                            HabitoRow(
+                                habito: habito,
+                                completadoHoy: viewModel.estaCompletadoHoy(habito),
+                                onCompletar: { viewModel.completar(habito) }
+                            )
+                        }
                         .swipeActions(edge: .leading) {
                             Button {
                                 habitoAEditar = habito
@@ -110,6 +113,9 @@ struct HabitosView: View {
                         }
                     }
                 }
+            }
+            .navigationDestination(for: Habito.self) { habito in
+                HabitoDetailView(habito: habito, registros: viewModel.registros)
             }
         }
         .listStyle(.insetGrouped)
