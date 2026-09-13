@@ -5,6 +5,7 @@ struct TarjetaDetailView: View {
     let viewModel: FinanzasViewModel
 
     @State private var mostrandoAgregarCompra = false
+    @State private var mostrandoSimulador = false
 
     private var comprasActivas: [Compra] {
         viewModel.compras(de: tarjeta).filter { !$0.estaPagada(diaCorte: tarjeta.diaCorte) }
@@ -57,11 +58,24 @@ struct TarjetaDetailView: View {
         .navigationTitle(tarjeta.nombre)
         .navigationBarTitleDisplayMode(.large)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button("Simular", systemImage: "wand.and.sparkles") {
+                    mostrandoSimulador = true
+                }
+            }
             ToolbarItem(placement: .primaryAction) {
                 Button("Agregar compra", systemImage: "plus") {
                     mostrandoAgregarCompra = true
                 }
             }
+        }
+        .sheet(isPresented: $mostrandoSimulador) {
+            SimuladorCompraView(
+                tarjeta: tarjeta,
+                cuotaMesActual: viewModel.cuotaMes(de: tarjeta),
+                deudaActual: viewModel.deudaTotal(de: tarjeta),
+                cupoActual: viewModel.cupoDisponible(de: tarjeta)
+            )
         }
         .sheet(isPresented: $mostrandoAgregarCompra) {
             AgregarCompraView(tarjetaId: tarjeta.id) { compra in
