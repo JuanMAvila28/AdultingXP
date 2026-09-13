@@ -101,7 +101,40 @@ struct ResumenView: View {
             .listStyle(.insetGrouped)
             .navigationTitle("Resumen")
             .onAppear { vm.recargar() }
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    ShareLink(item: textoCompartir) {
+                        Label("Compartir", systemImage: "square.and.arrow.up")
+                    }
+                }
+            }
         }
+    }
+
+    private var textoCompartir: String {
+        let fecha = Date.now.formatted(.dateTime.day().month(.wide).year()
+            .locale(Locale(identifier: "es_CO")))
+        var lineas = ["📊 Resumen AdultingXP — \(fecha)", ""]
+
+        let signo = vm.balanceGlobal >= 0 ? "+" : ""
+        lineas.append("Balance: \(signo)\(vm.balanceGlobal) pts  ≈ \((Double(vm.balanceGlobal) * tasaCambio).moneda)")
+
+        if !vm.habitos.isEmpty {
+            lineas.append("🎯 Hábitos: \(vm.habitosCompletadosHoy)/\(vm.habitos.count) hoy · racha máxima \(vm.rachaMaxima) días")
+        }
+        if !vm.tareas.isEmpty {
+            lineas.append("📚 Tareas: \(vm.tareasPendientes) pendientes · \(vm.porcentajeATiempo)% a tiempo")
+        }
+        if let meta = vm.proximaMeta {
+            lineas.append("🎁 Meta: \(meta.emoji) \(meta.nombre) — \(Int(vm.progresoWishlist(meta) * 100))%")
+        }
+        if !vm.tarjetas.isEmpty {
+            lineas.append("💳 Finanzas: deuda \(vm.deudaTotal.moneda) / límite \(vm.limiteTotal.moneda)")
+        }
+
+        lineas.append("")
+        lineas.append("Generado con AdultingXP")
+        return lineas.joined(separator: "\n")
     }
 
     // MARK: — Balance
