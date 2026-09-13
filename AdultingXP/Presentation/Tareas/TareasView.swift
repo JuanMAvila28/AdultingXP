@@ -58,7 +58,7 @@ struct TareasView: View {
             if !viewModel.tareasPendientes.isEmpty {
                 Section("Pendientes") {
                     ForEach(viewModel.tareasPendientes) { tarea in
-                        TareaPendienteRow(tarea: tarea)
+                        TareaPendienteRow(tarea: tarea, onCompletar: { viewModel.completar(tarea) })
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     tareaAEliminar = tarea
@@ -113,6 +113,10 @@ private struct BalanceTareasRow: View {
 
 private struct TareaPendienteRow: View {
     let tarea: Tarea
+    let onCompletar: () -> Void
+
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var escala: CGFloat = 1.0
 
     private var urgencyColor: Color {
         if tarea.estaVencida { return .appNegative }
@@ -127,20 +131,39 @@ private struct TareaPendienteRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(tarea.titulo)
-                .font(.appHeadline)
+        HStack(spacing: Spacing.md) {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(tarea.titulo)
+                    .font(.appHeadline)
 
-            HStack(spacing: Spacing.xs) {
-                Text(tarea.materia)
-                Text("·")
-                Image(systemName: urgencyIcon)
-                Text(tarea.fechaLimite, style: .relative)
-                Text("·")
-                Text("±\(tarea.puntajeBase) pts")
+                HStack(spacing: Spacing.xs) {
+                    Text(tarea.materia)
+                    Text("·")
+                    Image(systemName: urgencyIcon)
+                    Text(tarea.fechaLimite, style: .relative)
+                    Text("·")
+                    Text("±\(tarea.puntajeBase) pts")
+                }
+                .font(.appCaption)
+                .foregroundStyle(urgencyColor)
             }
-            .font(.appCaption)
-            .foregroundStyle(urgencyColor)
+
+            Spacer()
+
+            Button {
+                onCompletar()
+                if !reduceMotion {
+                    escala = 1.3
+                    withAnimation(AppAnimation.bouncy) { escala = 1.0 }
+                }
+            } label: {
+                Image(systemName: "checkmark.circle")
+                    .font(.title2)
+                    .foregroundStyle(urgencyColor)
+                    .scaleEffect(escala)
+            }
+            .buttonStyle(.plain)
+            .sensoryFeedback(.success, trigger: tarea.completada)
         }
         .padding(.vertical, Spacing.xs)
     }

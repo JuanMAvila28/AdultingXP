@@ -5,6 +5,7 @@ import Observation
 final class TareasViewModel {
     private let tareaRepo: any TareaRepositoryProtocol
     private let registroRepo: any RegistroPuntosRepositoryProtocol
+    private let completarUseCase: CompletarTareaUseCase
 
     var tareas: [Tarea] = []
     var registros: [RegistroPuntos] = []
@@ -29,6 +30,7 @@ final class TareasViewModel {
     ) {
         self.tareaRepo = tareaRepo
         self.registroRepo = registroRepo
+        self.completarUseCase = CompletarTareaUseCase(tareaRepo: tareaRepo, registroRepo: registroRepo)
         tareas = tareaRepo.cargar()
         registros = registroRepo.cargar()
     }
@@ -43,5 +45,17 @@ final class TareasViewModel {
     func eliminar(_ tarea: Tarea) {
         tareas.removeAll { $0.id == tarea.id }
         tareaRepo.guardar(tareas)
+    }
+
+    func completar(_ tarea: Tarea) {
+        let resultado = completarUseCase.ejecutar(
+            tarea: tarea,
+            todasLasTareas: tareas,
+            registrosActuales: registros
+        )
+        if let i = tareas.firstIndex(where: { $0.id == resultado.tareaActualizada.id }) {
+            tareas[i] = resultado.tareaActualizada
+        }
+        registros.append(resultado.nuevoRegistro)
     }
 }
