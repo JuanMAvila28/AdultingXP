@@ -39,4 +39,39 @@ final class NotificacionesService {
     func cancelarRecordatorio() {
         center.removePendingNotificationRequests(withIdentifiers: [idRecordatorio])
     }
+
+    // MARK: — Tareas
+
+    private func idTarea(_ tarea: Tarea) -> String { "tarea.\(tarea.id.uuidString)" }
+
+    func programarTarea(_ tarea: Tarea) {
+        cancelarTarea(tarea)
+        guard !tarea.completada, tarea.fechaLimite > .now else { return }
+
+        // Aviso 24 h antes; si queda menos de 24 h avisa en 1 min para no perderse la ventana
+        let anticipacion: TimeInterval = 24 * 3_600
+        let fechaAviso = max(.now.addingTimeInterval(60),
+                             tarea.fechaLimite.addingTimeInterval(-anticipacion))
+        guard fechaAviso < tarea.fechaLimite else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Tarea por vencer"
+        content.body  = "\"\(tarea.titulo)\" · \(tarea.materia)"
+        content.sound = .default
+
+        let componentes = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: fechaAviso
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: componentes, repeats: false)
+        center.add(UNNotificationRequest(
+            identifier: idTarea(tarea),
+            content: content,
+            trigger: trigger
+        ))
+    }
+
+    func cancelarTarea(_ tarea: Tarea) {
+        center.removePendingNotificationRequests(withIdentifiers: [idTarea(tarea)])
+    }
 }

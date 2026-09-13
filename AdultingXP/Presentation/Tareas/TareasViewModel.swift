@@ -6,6 +6,7 @@ final class TareasViewModel {
     private let tareaRepo: any TareaRepositoryProtocol
     private let registroRepo: any RegistroPuntosRepositoryProtocol
     private let completarUseCase: CompletarTareaUseCase
+    private let notificaciones = NotificacionesService.shared
 
     var tareas: [Tarea] = []
     var registros: [RegistroPuntos] = []
@@ -53,17 +54,20 @@ final class TareasViewModel {
     func agregar(_ tarea: Tarea) {
         tareas.append(tarea)
         tareaRepo.guardar(tareas)
+        notificaciones.programarTarea(tarea)
     }
 
     func actualizar(_ tarea: Tarea) {
         guard let i = tareas.firstIndex(where: { $0.id == tarea.id }) else { return }
         tareas[i] = tarea
         tareaRepo.guardar(tareas)
+        notificaciones.programarTarea(tarea)
     }
 
     func eliminar(_ tarea: Tarea) {
         tareas.removeAll { $0.id == tarea.id }
         tareaRepo.guardar(tareas)
+        notificaciones.cancelarTarea(tarea)
     }
 
     func completar(_ tarea: Tarea) {
@@ -76,5 +80,6 @@ final class TareasViewModel {
             tareas[i] = resultado.tareaActualizada
         }
         registros.append(resultado.nuevoRegistro)
+        notificaciones.cancelarTarea(tarea)
     }
 }
