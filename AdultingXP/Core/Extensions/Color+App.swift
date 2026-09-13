@@ -17,4 +17,15 @@ extension Color {
     // MARK: — Texto (adaptativos)
     static let appPrimary = Color.primary
     static let appSecondary = Color.secondary
+
+    // MARK: — Hex
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var value: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&value)
+        let r = Double((value >> 16) & 0xFF) / 255
+        let g = Double((value >> 8)  & 0xFF) / 255
+        let b = Double( value        & 0xFF) / 255
+        self.init(.sRGB, red: r, green: g, blue: b)
+    }
 }
