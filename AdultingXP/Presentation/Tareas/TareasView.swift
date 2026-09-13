@@ -62,6 +62,29 @@ struct TareasView: View {
                 BalanceTareasRow(balance: viewModel.balanceGlobal)
             }
 
+            if viewModel.materias.count > 1 {
+                Section {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: Spacing.sm) {
+                            FiltroChip(titulo: "Todas", seleccionado: viewModel.filtroMateria == nil) {
+                                viewModel.filtroMateria = nil
+                            }
+                            ForEach(viewModel.materias, id: \.self) { materia in
+                                FiltroChip(
+                                    titulo: materia,
+                                    seleccionado: viewModel.filtroMateria == materia
+                                ) {
+                                    viewModel.filtroMateria =
+                                        viewModel.filtroMateria == materia ? nil : materia
+                                }
+                            }
+                        }
+                        .padding(.vertical, Spacing.xs)
+                    }
+                    .listRowInsets(EdgeInsets(top: 8, leading: 16, bottom: 8, trailing: 0))
+                }
+            }
+
             if !viewModel.tareasPendientes.isEmpty {
                 Section("Pendientes") {
                     ForEach(viewModel.tareasPendientes) { tarea in

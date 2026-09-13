@@ -9,18 +9,27 @@ final class TareasViewModel {
 
     var tareas: [Tarea] = []
     var registros: [RegistroPuntos] = []
+    var filtroMateria: String? = nil
 
     var balanceGlobal: Int {
         registros.reduce(0) { $0 + $1.cantidad }
     }
 
+    var materias: [String] {
+        Array(Set(tareas.map(\.materia))).sorted()
+    }
+
     var tareasPendientes: [Tarea] {
-        tareas.filter { !$0.completada }.sorted { $0.fechaLimite < $1.fechaLimite }
+        tareas
+            .filter { !$0.completada }
+            .filter { filtroMateria == nil || $0.materia == filtroMateria }
+            .sorted { $0.fechaLimite < $1.fechaLimite }
     }
 
     var tareasCompletadas: [Tarea] {
         tareas
             .filter { $0.completada }
+            .filter { filtroMateria == nil || $0.materia == filtroMateria }
             .sorted { ($0.fechaCompletada ?? .distantPast) > ($1.fechaCompletada ?? .distantPast) }
     }
 
