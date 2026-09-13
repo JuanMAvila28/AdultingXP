@@ -22,7 +22,7 @@ struct HabitosView: View {
                 }
             }
             .navigationTitle("Hábitos")
-            .onAppear { viewModel.resetearRachasRotas() }
+            .onAppear { viewModel.recargar() }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button("Configuración", systemImage: "gearshape") {
@@ -68,7 +68,11 @@ struct HabitosView: View {
     private var listaHabitos: some View {
         List {
             Section {
-                BalanceRow(balance: viewModel.balanceGlobal)
+                NavigationLink {
+                    HistorialView()
+                } label: {
+                    BalanceRow(balance: viewModel.balanceGlobal)
+                }
             }
 
             if viewModel.categorias.count > 1 {

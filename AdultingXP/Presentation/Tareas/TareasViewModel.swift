@@ -37,6 +37,10 @@ final class TareasViewModel {
 
     // MARK: — Acciones
 
+    func recargarRegistros() {
+        registros = registroRepo.cargar()
+    }
+
     func agregar(_ tarea: Tarea) {
         tareas.append(tarea)
         tareaRepo.guardar(tareas)

@@ -20,6 +20,7 @@ struct WishlistView: View {
                 }
             }
             .navigationTitle("Wishlist")
+            .onAppear { viewModel.recargarRegistros() }
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Agregar", systemImage: "plus") {

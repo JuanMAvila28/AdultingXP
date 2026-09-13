@@ -20,6 +20,7 @@ struct TareasView: View {
                 }
             }
             .navigationTitle("Tareas")
+            .onAppear { viewModel.recargarRegistros() }
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button("Agregar", systemImage: "plus") {

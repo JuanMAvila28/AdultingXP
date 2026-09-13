@@ -35,6 +35,10 @@ final class WishlistViewModel {
 
     // MARK: — Acciones
 
+    func recargarRegistros() {
+        registros = registroRepo.cargar()
+    }
+
     func agregar(_ item: ItemWishlist) {
         items.append(item)
         wishlistRepo.guardar(items)

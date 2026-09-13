@@ -70,6 +70,12 @@ final class HabitosViewModel {
 
     // MARK: — Reset de rachas
 
+    func recargar() {
+        habitos = habitoRepo.cargar()
+        registros = registroRepo.cargar()
+        resetearRachasRotas()
+    }
+
     func resetearRachasRotas() {
         habitos = completarUseCase.resetearRachasRotas(habitos: habitos)
     }
