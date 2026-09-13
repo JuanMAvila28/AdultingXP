@@ -5,6 +5,7 @@ struct WishlistView: View {
     @State private var mostrandoCrear = false
     @State private var mostrandoSettings = false
     @State private var itemAEditar: ItemWishlist? = nil
+    @State private var itemAComprar: ItemWishlist? = nil
     @State private var itemAEliminar: ItemWishlist? = nil
     @State private var mostrandoConfirmacion = false
 
@@ -50,6 +51,11 @@ struct WishlistView: View {
                     viewModel.actualizar(actualizado)
                 }
             }
+            .sheet(item: $itemAComprar) { item in
+                ComprarConTarjetaView(item: item) { tarjetaId, cuotas in
+                    viewModel.comprarConTarjeta(item: item, tarjetaId: tarjetaId, numeroCuotas: cuotas)
+                }
+            }
             .confirmationDialog(
                 "Eliminar «\(itemAEliminar?.nombre ?? "")»",
                 isPresented: $mostrandoConfirmacion,
@@ -88,6 +94,10 @@ struct WishlistView: View {
                                 Label("Editar", systemImage: "pencil")
                             }
                             .tint(.blue)
+                            Button { itemAComprar = item } label: {
+                                Label("Tarjeta", systemImage: "creditcard")
+                            }
+                            .tint(.purple)
                         }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {

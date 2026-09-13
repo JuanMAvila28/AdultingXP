@@ -6,6 +6,7 @@ final class WishlistViewModel {
     private let wishlistRepo: any WishlistRepositoryProtocol
     private let registroRepo: any RegistroPuntosRepositoryProtocol
     private let reclamarUseCase: ReclamarItemWishlistUseCase
+    private let comprarUseCase = ComprarConTarjetaUseCase()
 
     var items: [ItemWishlist] = []
     var registros: [RegistroPuntos] = []
@@ -53,6 +54,15 @@ final class WishlistViewModel {
     func eliminar(_ item: ItemWishlist) {
         items.removeAll { $0.id == item.id }
         wishlistRepo.guardar(items)
+    }
+
+    func comprarConTarjeta(item: ItemWishlist, tarjetaId: UUID, numeroCuotas: Int) {
+        comprarUseCase.ejecutar(
+            item: item,
+            tarjetaId: tarjetaId,
+            numeroCuotas: numeroCuotas,
+            tasaCambio: UserSettings.tasaCambio
+        )
     }
 
     func reclamar(_ item: ItemWishlist) {
