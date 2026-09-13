@@ -12,8 +12,8 @@ final class HabitosViewModel {
     }
 
     init() {
-        habitos  = JSONStore.load([Habito].self,         fromFile: "habitos.json")  ?? []
-        registros = JSONStore.load([RegistroPuntos].self, fromFile: "registros.json") ?? []
+        habitos   = JSONStore.load([Habito].self,          fromFile: "habitos.json")   ?? []
+        registros = JSONStore.load([RegistroPuntos].self,  fromFile: "registros.json") ?? []
     }
 
     // MARK: — Acciones
@@ -21,6 +21,18 @@ final class HabitosViewModel {
     func agregar(_ habito: Habito) {
         habitos.append(habito)
         JSONStore.save(habitos, toFile: "habitos.json")
+    }
+
+    func actualizar(_ habito: Habito) {
+        guard let index = habitos.firstIndex(where: { $0.id == habito.id }) else { return }
+        habitos[index] = habito
+        JSONStore.save(habitos, toFile: "habitos.json")
+    }
+
+    func eliminar(_ habito: Habito) {
+        habitos.removeAll { $0.id == habito.id }
+        JSONStore.save(habitos, toFile: "habitos.json")
+        // Los RegistroPuntos históricos se conservan — son el ledger inmutable.
     }
 
     func completar(_ habito: Habito) {

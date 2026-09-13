@@ -3,6 +3,9 @@ import SwiftUI
 struct HabitosView: View {
     @State private var viewModel = HabitosViewModel()
     @State private var mostrandoCrear = false
+    @State private var habitoAEditar: Habito? = nil
+    @State private var habitoAEliminar: Habito? = nil
+    @State private var mostrandoConfirmacion = false
 
     var body: some View {
         NavigationStack {
@@ -14,21 +17,7 @@ struct HabitosView: View {
                         description: Text("Toca + para agregar tu primer hábito")
                     )
                 } else {
-                    List {
-                        Section {
-                            BalanceRow(balance: viewModel.balanceGlobal)
-                        }
-                        Section("Mis hábitos") {
-                            ForEach(viewModel.habitos) { habito in
-                                HabitoRow(
-                                    habito: habito,
-                                    completadoHoy: viewModel.estaCompletadoHoy(habito),
-                                    onCompletar: { viewModel.completar(habito) }
-                                )
-                            }
-                        }
-                    }
-                    .listStyle(.insetGrouped)
+                    listaHabitos
                 }
             }
             .navigationTitle("Hábitos")
@@ -44,7 +33,60 @@ struct HabitosView: View {
                     viewModel.agregar(habito)
                 }
             }
+            .sheet(item: $habitoAEditar) { habito in
+                EditarHabitoView(habito: habito) { actualizado in
+                    viewModel.actualizar(actualizado)
+                }
+            }
+            .confirmationDialog(
+                "Eliminar «\(habitoAEliminar?.nombre ?? "")»",
+                isPresented: $mostrandoConfirmacion,
+                titleVisibility: .visible
+            ) {
+                Button("Eliminar", role: .destructive) {
+                    if let h = habitoAEliminar { viewModel.eliminar(h) }
+                    habitoAEliminar = nil
+                }
+            } message: {
+                Text("Esta acción no se puede deshacer.")
+            }
         }
+    }
+
+    // MARK: — Lista
+
+    private var listaHabitos: some View {
+        List {
+            Section {
+                BalanceRow(balance: viewModel.balanceGlobal)
+            }
+            Section("Mis hábitos") {
+                ForEach(viewModel.habitos) { habito in
+                    HabitoRow(
+                        habito: habito,
+                        completadoHoy: viewModel.estaCompletadoHoy(habito),
+                        onCompletar: { viewModel.completar(habito) }
+                    )
+                    .swipeActions(edge: .leading) {
+                        Button {
+                            habitoAEditar = habito
+                        } label: {
+                            Label("Editar", systemImage: "pencil")
+                        }
+                        .tint(.blue)
+                    }
+                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        Button(role: .destructive) {
+                            habitoAEliminar = habito
+                            mostrandoConfirmacion = true
+                        } label: {
+                            Label("Eliminar", systemImage: "trash")
+                        }
+                    }
+                }
+            }
+        }
+        .listStyle(.insetGrouped)
     }
 }
 
@@ -110,7 +152,9 @@ private struct HabitoRow: View {
                       ? "checkmark.circle.fill"
                       : (habito.esBueno ? "checkmark.circle" : "minus.circle"))
                     .font(.title2)
-                    .foregroundStyle(completadoHoy ? Color.secondary : (habito.esBueno ? Color.appPositive : Color.appNegative))
+                    .foregroundStyle(completadoHoy
+                                     ? Color.secondary
+                                     : (habito.esBueno ? Color.appPositive : Color.appNegative))
                     .animation(AppAnimation.standard, value: completadoHoy)
             }
             .buttonStyle(.plain)
