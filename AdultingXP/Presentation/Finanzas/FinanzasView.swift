@@ -44,6 +44,9 @@ struct FinanzasView: View {
             } message: {
                 Text("Se eliminarán también todas las compras de esta tarjeta.")
             }
+            .navigationDestination(for: TarjetaCredito.self) { tarjeta in
+                TarjetaDetailView(tarjeta: tarjeta, viewModel: viewModel)
+            }
         }
     }
 
@@ -57,12 +60,15 @@ struct FinanzasView: View {
 
             Section("Mis tarjetas") {
                 ForEach(viewModel.tarjetas) { tarjeta in
-                    TarjetaCard(
-                        tarjeta: tarjeta,
-                        deudaTotal: viewModel.deudaTotal(de: tarjeta),
-                        cuotaMes: viewModel.cuotaMes(de: tarjeta),
-                        cupoDisponible: viewModel.cupoDisponible(de: tarjeta)
-                    )
+                    ZStack(alignment: .leading) {
+                        NavigationLink(value: tarjeta) { EmptyView() }.opacity(0)
+                        TarjetaCard(
+                            tarjeta: tarjeta,
+                            deudaTotal: viewModel.deudaTotal(de: tarjeta),
+                            cuotaMes: viewModel.cuotaMes(de: tarjeta),
+                            cupoDisponible: viewModel.cupoDisponible(de: tarjeta)
+                        )
+                    }
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(
                         top: Spacing.sm,
