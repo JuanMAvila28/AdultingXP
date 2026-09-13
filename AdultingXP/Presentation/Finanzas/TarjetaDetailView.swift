@@ -6,6 +6,7 @@ struct TarjetaDetailView: View {
 
     @State private var mostrandoAgregarCompra = false
     @State private var mostrandoSimulador = false
+    @State private var compraAEditar: Compra? = nil
     @State private var compraAEliminar: Compra? = nil
     @State private var mostrandoConfirmacion = false
 
@@ -44,6 +45,12 @@ struct TarjetaDetailView: View {
                 Section("Compras activas") {
                     ForEach(comprasActivas) { compra in
                         CompraRow(compra: compra, diaCorte: tarjeta.diaCorte)
+                            .swipeActions(edge: .leading) {
+                                Button { compraAEditar = compra } label: {
+                                    Label("Editar", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                            }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     compraAEliminar = compra
@@ -98,6 +105,11 @@ struct TarjetaDetailView: View {
         .sheet(isPresented: $mostrandoAgregarCompra) {
             AgregarCompraView(tarjetaId: tarjeta.id) { compra in
                 viewModel.agregarCompra(compra)
+            }
+        }
+        .sheet(item: $compraAEditar) { compra in
+            EditarCompraView(compra: compra) { actualizada in
+                viewModel.actualizarCompra(actualizada)
             }
         }
         .confirmationDialog(

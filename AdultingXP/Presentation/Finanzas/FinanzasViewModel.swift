@@ -48,6 +48,12 @@ final class FinanzasViewModel {
         compraRepo.guardar(compras)
     }
 
+    func actualizarCompra(_ compra: Compra) {
+        guard let i = compras.firstIndex(where: { $0.id == compra.id }) else { return }
+        compras[i] = compra
+        compraRepo.guardar(compras)
+    }
+
     func eliminarCompra(_ compra: Compra) {
         compras.removeAll { $0.id == compra.id }
         compraRepo.guardar(compras)
