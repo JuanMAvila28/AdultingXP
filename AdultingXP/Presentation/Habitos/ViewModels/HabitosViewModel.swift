@@ -6,6 +6,7 @@ final class HabitosViewModel {
 
     private let habitoRepo: any HabitoRepositoryProtocol
     private let registroRepo: any RegistroPuntosRepositoryProtocol
+    private let completarUseCase: CompletarHabitoUseCase
 
     var habitos: [Habito] = []
     var registros: [RegistroPuntos] = []
@@ -31,6 +32,7 @@ final class HabitosViewModel {
     ) {
         self.habitoRepo = habitoRepo
         self.registroRepo = registroRepo
+        self.completarUseCase = CompletarHabitoUseCase(habitoRepo: habitoRepo, registroRepo: registroRepo)
         habitos = habitoRepo.cargar()
         registros = registroRepo.cargar()
         resetearRachasRotas()
@@ -55,40 +57,21 @@ final class HabitosViewModel {
     }
 
     func completar(_ habito: Habito) {
-        guard let index = habitos.firstIndex(where: { $0.id == habito.id }) else { return }
-
-        let nuevoStreak = calcularNuevoStreak(para: habito)
-        habitos[index].streakActual = nuevoStreak
-        habitos[index].fechaUltimaCompletacion = .now
-        habitoRepo.guardar(habitos)
-
-        let delta = habito.esBueno ? habito.puntajeBase : -habito.puntajeBase
-        registros.append(RegistroPuntos(cantidad: delta, concepto: habito.nombre, origen: .habito))
-
-        if let bonus = bonusPorStreak(nuevoStreak, puntajeBase: habito.puntajeBase) {
-            registros.append(RegistroPuntos(
-                cantidad: bonus,
-                concepto: "🔥 Racha de \(nuevoStreak) · \(habito.nombre)",
-                origen: .bonusStreak
-            ))
+        let resultado = completarUseCase.ejecutar(
+            habito: habito,
+            todosLosHabitos: habitos,
+            registrosActuales: registros
+        )
+        if let i = habitos.firstIndex(where: { $0.id == resultado.habitoActualizado.id }) {
+            habitos[i] = resultado.habitoActualizado
         }
-
-        registroRepo.guardar(registros)
+        registros.append(contentsOf: resultado.nuevosRegistros)
     }
 
     // MARK: — Reset de rachas
 
-    /// Revisa todos los hábitos y pone streakActual = 0 en los que se rompieron.
-    /// Llamar al inicializar y cada vez que la vista aparece (puede haber pasado la medianoche).
     func resetearRachasRotas() {
-        var huboResets = false
-        for index in habitos.indices where habitos[index].streakActual > 0 {
-            if streakRoto(habitos[index]) {
-                habitos[index].streakActual = 0
-                huboResets = true
-            }
-        }
-        if huboResets { habitoRepo.guardar(habitos) }
+        habitos = completarUseCase.resetearRachasRotas(habitos: habitos)
     }
 
     // MARK: — Consultas
@@ -96,65 +79,5 @@ final class HabitosViewModel {
     func estaCompletadoHoy(_ habito: Habito) -> Bool {
         guard let fecha = habito.fechaUltimaCompletacion else { return false }
         return Calendar.current.isDateInToday(fecha)
-    }
-
-    // MARK: — Streak (se moverá a CompletarHabitoUseCase en CH-2.1)
-
-    private func streakRoto(_ habito: Habito) -> Bool {
-        guard let ultima = habito.fechaUltimaCompletacion else { return false }
-        let calendar = Calendar.current
-
-        switch habito.frecuencia {
-        case .diario:
-            return !calendar.isDateInToday(ultima) && !calendar.isDateInYesterday(ultima)
-
-        case .semanal:
-            var cal = Calendar.current
-            cal.firstWeekday = UserSettings.diaCorteSemanal
-            let inicioPeriodoActual = inicioPeriodoSemanal(para: .now, calendar: cal)
-            // Si la última completación es anterior al inicio del período pasado, la racha se rompió
-            guard let inicioPeriodoAnterior = cal.date(byAdding: .weekOfYear, value: -1, to: inicioPeriodoActual) else {
-                return false
-            }
-            return ultima < inicioPeriodoAnterior
-        }
-    }
-
-    private func calcularNuevoStreak(para habito: Habito) -> Int {
-        guard let ultima = habito.fechaUltimaCompletacion else { return 1 }
-        let calendar = Calendar.current
-
-        switch habito.frecuencia {
-        case .diario:
-            if calendar.isDateInYesterday(ultima)  { return habito.streakActual + 1 }
-            if calendar.isDateInToday(ultima)       { return habito.streakActual }
-            return 1
-
-        case .semanal:
-            var cal = Calendar.current
-            cal.firstWeekday = UserSettings.diaCorteSemanal
-            let inicioPeriodoActual = inicioPeriodoSemanal(para: .now, calendar: cal)
-            guard let inicioPeriodoAnterior = cal.date(byAdding: .weekOfYear, value: -1, to: inicioPeriodoActual) else {
-                return 1
-            }
-            if ultima >= inicioPeriodoActual   { return habito.streakActual }       // ya completado este período
-            if ultima >= inicioPeriodoAnterior { return habito.streakActual + 1 }   // período anterior, continúa
-            return 1
-        }
-    }
-
-    private func inicioPeriodoSemanal(para fecha: Date, calendar: Calendar) -> Date {
-        let components = calendar.dateComponents([.yearForWeekOfYear, .weekOfYear], from: fecha)
-        return calendar.date(from: components) ?? fecha
-    }
-
-    private func bonusPorStreak(_ streak: Int, puntajeBase: Int) -> Int? {
-        switch streak {
-        case 3:  return max(1, puntajeBase / 2)
-        case 7:  return puntajeBase
-        case 14: return puntajeBase * 2
-        case 30: return puntajeBase * 3
-        default: return nil
-        }
     }
 }
