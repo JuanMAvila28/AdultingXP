@@ -25,6 +25,7 @@ struct HistorialView: View {
     @State private var registros: [RegistroPuntos] = []
     @State private var filtroOrigen: OrigenPuntos? = nil
     @State private var filtroPeriodo: PeriodoHistorial = .todo
+    @State private var busqueda = ""
 
     private var balance: Int {
         registros.reduce(0) { $0 + $1.cantidad }
@@ -35,7 +36,17 @@ struct HistorialView: View {
         if let inicio = filtroPeriodo.inicio {
             fuente = fuente.filter { $0.fecha >= inicio }
         }
+        if !busqueda.isEmpty {
+            fuente = fuente.filter { $0.concepto.localizedCaseInsensitiveContains(busqueda) }
+        }
         return fuente.sorted { $0.fecha > $1.fecha }
+    }
+
+    private var registrosPorFecha: [(dia: Date, items: [RegistroPuntos])] {
+        let cal = Calendar.current
+        let agrupados = Dictionary(grouping: registrosFiltrados) { cal.startOfDay(for: $0.fecha) }
+        return agrupados.map { (dia: $0.key, items: $0.value) }
+                        .sorted { $0.dia > $1.dia }
     }
 
     var body: some View {
@@ -66,14 +77,18 @@ struct HistorialView: View {
                 }
             }
 
-            Section {
-                if registrosFiltrados.isEmpty {
+            if registrosPorFecha.isEmpty {
+                Section {
                     Text("Sin registros para este filtro")
                         .foregroundStyle(.secondary)
                         .font(.appBody)
-                } else {
-                    ForEach(registrosFiltrados) { registro in
-                        RegistroRow(registro: registro)
+                }
+            } else {
+                ForEach(registrosPorFecha, id: \.dia) { grupo in
+                    Section(header: Text(grupo.dia.etiquetaDia)) {
+                        ForEach(grupo.items) { registro in
+                            RegistroRow(registro: registro)
+                        }
                     }
                 }
             }
@@ -81,9 +96,11 @@ struct HistorialView: View {
         .listStyle(.insetGrouped)
         .navigationTitle("Historial")
         .navigationBarTitleDisplayMode(.large)
+        .searchable(text: $busqueda, prompt: "Buscar en historial")
         .onAppear { registros = RegistroPuntosRepository().cargar() }
         .animation(AppAnimation.standard, value: filtroOrigen)
         .animation(AppAnimation.standard, value: filtroPeriodo)
+        .animation(AppAnimation.standard, value: busqueda)
     }
 
     private func chipRow(chips: [(String, Bool, () -> Void)]) -> some View {
