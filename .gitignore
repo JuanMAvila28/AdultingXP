@@ -1,6 +1,9 @@
 # Proyecto
 prompt-adultingxp-claude-code.md
 
+# Excluir .gitkeep — no compatibles con PBXFileSystemSynchronizedRootGroup
+.gitkeep
+
 # Xcode
 *.xcuserstate
 xcuserdata/
