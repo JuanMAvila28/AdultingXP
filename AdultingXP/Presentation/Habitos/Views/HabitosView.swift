@@ -3,6 +3,7 @@ import SwiftUI
 struct HabitosView: View {
     @State private var viewModel = HabitosViewModel()
     @State private var mostrandoCrear = false
+    @State private var mostrandoSettings = false
     @State private var habitoAEditar: Habito? = nil
     @State private var habitoAEliminar: Habito? = nil
     @State private var mostrandoConfirmacion = false
@@ -21,12 +22,21 @@ struct HabitosView: View {
                 }
             }
             .navigationTitle("Hábitos")
+            .onAppear { viewModel.resetearRachasRotas() }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Configuración", systemImage: "gearshape") {
+                        mostrandoSettings = true
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button("Agregar", systemImage: "plus") {
                         mostrandoCrear = true
                     }
                 }
+            }
+            .sheet(isPresented: $mostrandoSettings) {
+                HabitosSettingsView()
             }
             .sheet(isPresented: $mostrandoCrear) {
                 CrearHabitoView { habito in
@@ -140,9 +150,15 @@ private struct HabitoRow: View {
                 Text(habito.nombre)
                     .font(.appHeadline)
 
-                Text("\(habito.categoria) · \(habito.frecuencia.label) · \(habito.esBueno ? "+" : "−")\(habito.puntajeBase) pts")
-                    .font(.appCaption)
-                    .foregroundStyle(.secondary)
+                HStack(spacing: Spacing.xs) {
+                    Text("\(habito.categoria) · \(habito.frecuencia.label) · \(habito.esBueno ? "+" : "−")\(habito.puntajeBase) pts")
+
+                    if habito.streakActual > 0 {
+                        Text("· 🔥\(habito.streakActual)")
+                    }
+                }
+                .font(.appCaption)
+                .foregroundStyle(.secondary)
             }
 
             Spacer()
