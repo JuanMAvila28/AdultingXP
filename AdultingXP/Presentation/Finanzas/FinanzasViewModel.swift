@@ -80,4 +80,19 @@ final class FinanzasViewModel {
     func cupoDisponible(de tarjeta: TarjetaCredito) -> Double {
         tarjeta.limiteCredito - deudaTotal(de: tarjeta)
     }
+
+    // MARK: — Gráfica
+
+    struct DatoDeuda: Identifiable {
+        let id: UUID
+        let nombre: String
+        let deuda: Double
+        let colorHex: String
+    }
+
+    var datosGraficaDeuda: [DatoDeuda] {
+        tarjetas
+            .map { DatoDeuda(id: $0.id, nombre: $0.nombre, deuda: deudaTotal(de: $0), colorHex: $0.colorHex) }
+            .filter { $0.deuda > 0 }
+    }
 }

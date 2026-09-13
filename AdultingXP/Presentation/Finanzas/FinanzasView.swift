@@ -1,4 +1,5 @@
 import SwiftUI
+import Charts
 
 struct FinanzasView: View {
     @State private var viewModel = FinanzasViewModel()
@@ -64,6 +65,10 @@ struct FinanzasView: View {
                 ResumenDeudaRow(deudaGlobal: viewModel.deudaGlobal)
             }
 
+            if viewModel.datosGraficaDeuda.count > 1 {
+                graficaDeuda
+            }
+
             Section("Mis tarjetas") {
                 ForEach(viewModel.tarjetas) { tarjeta in
                     ZStack(alignment: .leading) {
@@ -100,6 +105,45 @@ struct FinanzasView: View {
             }
         }
         .listStyle(.insetGrouped)
+    }
+}
+
+// MARK: — Gráfica de deuda
+
+extension FinanzasView {
+    fileprivate var graficaDeuda: some View {
+        Section("Distribución de deuda") {
+            VStack(spacing: Spacing.md) {
+                Chart(viewModel.datosGraficaDeuda) { dato in
+                    SectorMark(
+                        angle: .value("Deuda", dato.deuda),
+                        innerRadius: .ratio(0.58),
+                        angularInset: 2
+                    )
+                    .foregroundStyle(Color(hex: dato.colorHex))
+                    .cornerRadius(4)
+                }
+                .frame(height: 180)
+
+                VStack(spacing: Spacing.xs) {
+                    ForEach(viewModel.datosGraficaDeuda) { dato in
+                        HStack(spacing: Spacing.sm) {
+                            Circle()
+                                .fill(Color(hex: dato.colorHex))
+                                .frame(width: 10, height: 10)
+                            Text(dato.nombre)
+                                .font(.appCaption)
+                            Spacer()
+                            Text(dato.deuda.moneda)
+                                .font(.appCaption)
+                                .foregroundStyle(.secondary)
+                                .monospacedDigit()
+                        }
+                    }
+                }
+            }
+            .padding(.vertical, Spacing.xs)
+        }
     }
 }
 
