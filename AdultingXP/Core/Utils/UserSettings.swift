@@ -6,6 +6,7 @@ enum UserSettings {
 
     enum Keys {
         static let diaCorteSemanal = "diaCorteSemanal"
+        static let tasaCambio = "tasaCambio"
     }
 
     /// Día de la semana en que se reinicia el período semanal.
@@ -14,5 +15,11 @@ enum UserSettings {
     static var diaCorteSemanal: Int {
         get { UserDefaults.standard.object(forKey: Keys.diaCorteSemanal) as? Int ?? 2 }
         set { UserDefaults.standard.set(newValue, forKey: Keys.diaCorteSemanal) }
+    }
+
+    /// Cuántos pesos equivale 1 punto. Valor por defecto: 100.
+    static var tasaCambio: Double {
+        get { UserDefaults.standard.object(forKey: Keys.tasaCambio) as? Double ?? 100 }
+        set { UserDefaults.standard.set(newValue, forKey: Keys.tasaCambio) }
     }
 }

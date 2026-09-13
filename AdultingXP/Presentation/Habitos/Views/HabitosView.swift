@@ -119,17 +119,11 @@ struct HabitosView: View {
     private var filtroChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
-                CategoriaChip(
-                    titulo: "Todos",
-                    seleccionado: viewModel.filtroCategoria == nil
-                ) {
+                FiltroChip(titulo: "Todos", seleccionado: viewModel.filtroCategoria == nil) {
                     viewModel.filtroCategoria = nil
                 }
                 ForEach(viewModel.categorias, id: \.self) { cat in
-                    CategoriaChip(
-                        titulo: cat,
-                        seleccionado: viewModel.filtroCategoria == cat
-                    ) {
+                    FiltroChip(titulo: cat, seleccionado: viewModel.filtroCategoria == cat) {
                         viewModel.filtroCategoria = cat
                     }
                 }
@@ -137,28 +131,6 @@ struct HabitosView: View {
             .padding(.horizontal, Spacing.md)
             .padding(.vertical, Spacing.sm)
         }
-    }
-}
-
-// MARK: — Chip de categoría
-
-private struct CategoriaChip: View {
-    let titulo: String
-    let seleccionado: Bool
-    let onTap: () -> Void
-
-    var body: some View {
-        Button(action: onTap) {
-            Text(titulo)
-                .font(.appCaption)
-                .padding(.horizontal, Spacing.md)
-                .padding(.vertical, Spacing.sm)
-                .background(seleccionado ? Color.appAccent : Color.secondary.opacity(0.12))
-                .foregroundStyle(seleccionado ? Color.white : Color.primary)
-                .clipShape(Capsule())
-                .animation(AppAnimation.quick, value: seleccionado)
-        }
-        .buttonStyle(.plain)
     }
 }
 

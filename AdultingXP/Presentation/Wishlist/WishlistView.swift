@@ -3,8 +3,11 @@ import SwiftUI
 struct WishlistView: View {
     @State private var viewModel = WishlistViewModel()
     @State private var mostrandoCrear = false
+    @State private var mostrandoSettings = false
     @State private var itemAEliminar: ItemWishlist? = nil
     @State private var mostrandoConfirmacion = false
+
+    @AppStorage(UserSettings.Keys.tasaCambio) private var tasaCambio: Double = 100
 
     var body: some View {
         NavigationStack {
@@ -22,11 +25,19 @@ struct WishlistView: View {
             .navigationTitle("Wishlist")
             .onAppear { viewModel.recargarRegistros() }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Configuración", systemImage: "gearshape") {
+                        mostrandoSettings = true
+                    }
+                }
                 ToolbarItem(placement: .primaryAction) {
                     Button("Agregar", systemImage: "plus") {
                         mostrandoCrear = true
                     }
                 }
+            }
+            .sheet(isPresented: $mostrandoSettings) {
+                WishlistSettingsView()
             }
             .sheet(isPresented: $mostrandoCrear) {
                 CrearItemWishlistView { item in
@@ -53,7 +64,7 @@ struct WishlistView: View {
     private var listaItems: some View {
         List {
             Section {
-                BalanceWishlistRow(balance: viewModel.balanceGlobal)
+                BalanceWishlistRow(balance: viewModel.balanceGlobal, tasaCambio: tasaCambio)
             }
 
             if !viewModel.itemsPendientes.isEmpty {
@@ -63,6 +74,7 @@ struct WishlistView: View {
                             item: item,
                             progreso: viewModel.progreso(para: item),
                             puedeReclamar: viewModel.puedeReclamar(item),
+                            tasaCambio: tasaCambio,
                             onReclamar: { viewModel.reclamar(item) }
                         )
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
@@ -80,7 +92,7 @@ struct WishlistView: View {
             if !viewModel.itemsReclamados.isEmpty {
                 Section("Reclamados") {
                     ForEach(viewModel.itemsReclamados) { item in
-                        ItemWishlistRow(item: item, progreso: 1.0, puedeReclamar: false)
+                        ItemWishlistRow(item: item, progreso: 1.0, puedeReclamar: false, tasaCambio: tasaCambio)
                     }
                 }
             }
@@ -93,6 +105,7 @@ struct WishlistView: View {
 
 private struct BalanceWishlistRow: View {
     let balance: Int
+    let tasaCambio: Double
 
     var body: some View {
         HStack {
@@ -105,6 +118,9 @@ private struct BalanceWishlistRow: View {
                     .foregroundStyle(balance >= 0 ? Color.appPositive : Color.appNegative)
                     .contentTransition(.numericText())
                     .animation(AppAnimation.standard, value: balance)
+                Text("≈ \((Double(balance) * tasaCambio).moneda)")
+                    .font(.appCaption)
+                    .foregroundStyle(.secondary)
             }
             Spacer()
             Image(systemName: "star.circle.fill")
@@ -121,6 +137,7 @@ private struct ItemWishlistRow: View {
     let item: ItemWishlist
     let progreso: Double
     let puedeReclamar: Bool
+    var tasaCambio: Double = 100
     var onReclamar: (() -> Void)? = nil
 
     @ScaledMetric private var emojiFrame: CGFloat = 36
@@ -137,7 +154,7 @@ private struct ItemWishlistRow: View {
                         .font(.appHeadline)
                         .strikethrough(item.reclamado)
 
-                    Text("\(item.costoEnPuntos) pts")
+                    Text("\(item.costoEnPuntos) pts  ≈ \((Double(item.costoEnPuntos) * tasaCambio).moneda)")
                         .font(.appCaption)
                         .foregroundStyle(.secondary)
                 }
