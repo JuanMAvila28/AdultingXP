@@ -70,33 +70,91 @@ struct HabitosView: View {
             Section {
                 BalanceRow(balance: viewModel.balanceGlobal)
             }
-            Section("Mis hábitos") {
-                ForEach(viewModel.habitos) { habito in
-                    HabitoRow(
-                        habito: habito,
-                        completadoHoy: viewModel.estaCompletadoHoy(habito),
-                        onCompletar: { viewModel.completar(habito) }
-                    )
-                    .swipeActions(edge: .leading) {
-                        Button {
-                            habitoAEditar = habito
-                        } label: {
-                            Label("Editar", systemImage: "pencil")
+
+            if viewModel.categorias.count > 1 {
+                Section {
+                    filtroChips
+                        .listRowBackground(Color.clear)
+                        .listRowSeparator(.hidden)
+                        .listRowInsets(EdgeInsets())
+                }
+            }
+
+            ForEach(viewModel.habitosAgrupados, id: \.categoria) { grupo in
+                Section(grupo.categoria) {
+                    ForEach(grupo.items) { habito in
+                        HabitoRow(
+                            habito: habito,
+                            completadoHoy: viewModel.estaCompletadoHoy(habito),
+                            onCompletar: { viewModel.completar(habito) }
+                        )
+                        .swipeActions(edge: .leading) {
+                            Button {
+                                habitoAEditar = habito
+                            } label: {
+                                Label("Editar", systemImage: "pencil")
+                            }
+                            .tint(.blue)
                         }
-                        .tint(.blue)
-                    }
-                    .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                        Button(role: .destructive) {
-                            habitoAEliminar = habito
-                            mostrandoConfirmacion = true
-                        } label: {
-                            Label("Eliminar", systemImage: "trash")
+                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                            Button(role: .destructive) {
+                                habitoAEliminar = habito
+                                mostrandoConfirmacion = true
+                            } label: {
+                                Label("Eliminar", systemImage: "trash")
+                            }
                         }
                     }
                 }
             }
         }
         .listStyle(.insetGrouped)
+        .animation(AppAnimation.standard, value: viewModel.filtroCategoria)
+    }
+
+    private var filtroChips: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.sm) {
+                CategoriaChip(
+                    titulo: "Todos",
+                    seleccionado: viewModel.filtroCategoria == nil
+                ) {
+                    viewModel.filtroCategoria = nil
+                }
+                ForEach(viewModel.categorias, id: \.self) { cat in
+                    CategoriaChip(
+                        titulo: cat,
+                        seleccionado: viewModel.filtroCategoria == cat
+                    ) {
+                        viewModel.filtroCategoria = cat
+                    }
+                }
+            }
+            .padding(.horizontal, Spacing.md)
+            .padding(.vertical, Spacing.sm)
+        }
+    }
+}
+
+// MARK: — Chip de categoría
+
+private struct CategoriaChip: View {
+    let titulo: String
+    let seleccionado: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            Text(titulo)
+                .font(.appCaption)
+                .padding(.horizontal, Spacing.md)
+                .padding(.vertical, Spacing.sm)
+                .background(seleccionado ? Color.appAccent : Color.secondary.opacity(0.12))
+                .foregroundStyle(seleccionado ? Color.white : Color.primary)
+                .clipShape(Capsule())
+                .animation(AppAnimation.quick, value: seleccionado)
+        }
+        .buttonStyle(.plain)
     }
 }
 

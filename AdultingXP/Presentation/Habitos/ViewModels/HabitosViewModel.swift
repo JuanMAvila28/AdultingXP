@@ -9,9 +9,20 @@ final class HabitosViewModel {
 
     var habitos: [Habito] = []
     var registros: [RegistroPuntos] = []
+    var filtroCategoria: String? = nil
 
     var balanceGlobal: Int {
         registros.reduce(0) { $0 + $1.cantidad }
+    }
+
+    var categorias: [String] {
+        Array(Set(habitos.map(\.categoria))).sorted()
+    }
+
+    var habitosAgrupados: [(categoria: String, items: [Habito])] {
+        let fuente = filtroCategoria.map { f in habitos.filter { $0.categoria == f } } ?? habitos
+        let agrupados = Dictionary(grouping: fuente, by: \.categoria)
+        return agrupados.keys.sorted().map { cat in (categoria: cat, items: agrupados[cat] ?? []) }
     }
 
     init(
