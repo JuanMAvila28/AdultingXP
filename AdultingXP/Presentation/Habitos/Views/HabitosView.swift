@@ -14,8 +14,19 @@ struct HabitosView: View {
                         description: Text("Toca + para agregar tu primer hábito")
                     )
                 } else {
-                    List(viewModel.habitos) { habito in
-                        HabitoRow(habito: habito)
+                    List {
+                        Section {
+                            BalanceRow(balance: viewModel.balanceGlobal)
+                        }
+                        Section("Mis hábitos") {
+                            ForEach(viewModel.habitos) { habito in
+                                HabitoRow(
+                                    habito: habito,
+                                    completadoHoy: viewModel.estaCompletadoHoy(habito),
+                                    onCompletar: { viewModel.completar(habito) }
+                                )
+                            }
+                        }
                     }
                     .listStyle(.insetGrouped)
                 }
@@ -37,10 +48,45 @@ struct HabitosView: View {
     }
 }
 
-// MARK: — Fila
+// MARK: — Tarjeta de balance
+
+private struct BalanceRow: View {
+    let balance: Int
+
+    private var color: Color {
+        if balance > 0 { return .appPositive }
+        if balance < 0 { return .appNegative }
+        return .secondary
+    }
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text("Balance global")
+                    .font(.appCaption)
+                    .foregroundStyle(.secondary)
+                Text("\(balance >= 0 ? "+" : "")\(balance) pts")
+                    .font(.appPoints)
+                    .foregroundStyle(color)
+                    .contentTransition(.numericText())
+                    .animation(AppAnimation.standard, value: balance)
+            }
+            Spacer()
+            Image(systemName: balance >= 0 ? "arrow.up.right.circle.fill" : "arrow.down.right.circle.fill")
+                .font(.largeTitle)
+                .foregroundStyle(color)
+                .animation(AppAnimation.standard, value: balance)
+        }
+        .padding(.vertical, Spacing.xs)
+    }
+}
+
+// MARK: — Fila de hábito
 
 private struct HabitoRow: View {
     let habito: Habito
+    let completadoHoy: Bool
+    let onCompletar: () -> Void
 
     var body: some View {
         HStack(spacing: Spacing.md) {
@@ -52,17 +98,23 @@ private struct HabitoRow: View {
                 Text(habito.nombre)
                     .font(.appHeadline)
 
-                Text("\(habito.categoria) · \(habito.frecuencia.label)")
+                Text("\(habito.categoria) · \(habito.frecuencia.label) · \(habito.esBueno ? "+" : "−")\(habito.puntajeBase) pts")
                     .font(.appCaption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer()
 
-            Text("\(habito.esBueno ? "+" : "−")\(habito.puntajeBase) pts")
-                .font(.appCaption)
-                .fontWeight(.semibold)
-                .foregroundStyle(habito.esBueno ? Color.appPositive : Color.appNegative)
+            Button(action: onCompletar) {
+                Image(systemName: completadoHoy
+                      ? "checkmark.circle.fill"
+                      : (habito.esBueno ? "checkmark.circle" : "minus.circle"))
+                    .font(.title2)
+                    .foregroundStyle(completadoHoy ? Color.secondary : (habito.esBueno ? Color.appPositive : Color.appNegative))
+                    .animation(AppAnimation.standard, value: completadoHoy)
+            }
+            .buttonStyle(.plain)
+            .disabled(completadoHoy)
         }
         .padding(.vertical, Spacing.xs)
     }
