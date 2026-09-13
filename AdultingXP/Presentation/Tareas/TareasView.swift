@@ -59,7 +59,9 @@ struct TareasView: View {
     private var listaTareas: some View {
         List {
             Section {
-                BalanceTareasRow(balance: viewModel.balanceGlobal)
+                NavigationLink { HistorialView() } label: {
+                    BalanceTareasRow(balance: viewModel.balanceGlobal)
+                }
             }
 
             if viewModel.materias.count > 1 {
@@ -111,6 +113,14 @@ struct TareasView: View {
                 Section("Completadas") {
                     ForEach(viewModel.tareasCompletadas) { tarea in
                         TareaCompletadaRow(tarea: tarea)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    tareaAEliminar = tarea
+                                    mostrandoConfirmacion = true
+                                } label: {
+                                    Label("Eliminar", systemImage: "trash")
+                                }
+                            }
                     }
                 }
             }

@@ -76,7 +76,9 @@ struct WishlistView: View {
     private var listaItems: some View {
         List {
             Section {
-                BalanceWishlistRow(balance: viewModel.balanceGlobal, tasaCambio: tasaCambio)
+                NavigationLink { HistorialView() } label: {
+                    BalanceWishlistRow(balance: viewModel.balanceGlobal, tasaCambio: tasaCambio)
+                }
             }
 
             if !viewModel.itemsPendientes.isEmpty {
