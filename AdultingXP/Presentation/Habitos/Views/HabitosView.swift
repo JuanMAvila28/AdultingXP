@@ -198,11 +198,15 @@ private struct HabitoRow: View {
     let completadoHoy: Bool
     let onCompletar: () -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @ScaledMetric private var emojiFrame: CGFloat = 36
+    @State private var escala: CGFloat = 1.0
+
     var body: some View {
         HStack(spacing: Spacing.md) {
             Text(habito.emoji)
                 .font(.title2)
-                .frame(width: 36)
+                .frame(width: emojiFrame)
 
             VStack(alignment: .leading, spacing: Spacing.xs) {
                 Text(habito.nombre)
@@ -221,7 +225,14 @@ private struct HabitoRow: View {
 
             Spacer()
 
-            Button(action: onCompletar) {
+            Button {
+                guard !completadoHoy else { return }
+                onCompletar()
+                if !reduceMotion {
+                    escala = 1.3
+                    withAnimation(AppAnimation.bouncy) { escala = 1.0 }
+                }
+            } label: {
                 Image(systemName: completadoHoy
                       ? "checkmark.circle.fill"
                       : (habito.esBueno ? "checkmark.circle" : "minus.circle"))
@@ -229,10 +240,12 @@ private struct HabitoRow: View {
                     .foregroundStyle(completadoHoy
                                      ? Color.secondary
                                      : (habito.esBueno ? Color.appPositive : Color.appNegative))
+                    .scaleEffect(escala)
                     .animation(AppAnimation.standard, value: completadoHoy)
             }
             .buttonStyle(.plain)
             .disabled(completadoHoy)
+            .sensoryFeedback(.success, trigger: completadoHoy)
         }
         .padding(.vertical, Spacing.xs)
     }
