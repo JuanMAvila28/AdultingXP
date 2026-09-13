@@ -46,6 +46,12 @@ final class TareasViewModel {
         tareaRepo.guardar(tareas)
     }
 
+    func actualizar(_ tarea: Tarea) {
+        guard let i = tareas.firstIndex(where: { $0.id == tarea.id }) else { return }
+        tareas[i] = tarea
+        tareaRepo.guardar(tareas)
+    }
+
     func eliminar(_ tarea: Tarea) {
         tareas.removeAll { $0.id == tarea.id }
         tareaRepo.guardar(tareas)

@@ -4,6 +4,7 @@ struct WishlistView: View {
     @State private var viewModel = WishlistViewModel()
     @State private var mostrandoCrear = false
     @State private var mostrandoSettings = false
+    @State private var itemAEditar: ItemWishlist? = nil
     @State private var itemAEliminar: ItemWishlist? = nil
     @State private var mostrandoConfirmacion = false
 
@@ -44,6 +45,11 @@ struct WishlistView: View {
                     viewModel.agregar(item)
                 }
             }
+            .sheet(item: $itemAEditar) { item in
+                EditarItemWishlistView(item: item) { actualizado in
+                    viewModel.actualizar(actualizado)
+                }
+            }
             .confirmationDialog(
                 "Eliminar «\(itemAEliminar?.nombre ?? "")»",
                 isPresented: $mostrandoConfirmacion,
@@ -77,6 +83,12 @@ struct WishlistView: View {
                             tasaCambio: tasaCambio,
                             onReclamar: { viewModel.reclamar(item) }
                         )
+                        .swipeActions(edge: .leading) {
+                            Button { itemAEditar = item } label: {
+                                Label("Editar", systemImage: "pencil")
+                            }
+                            .tint(.blue)
+                        }
                         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                             Button(role: .destructive) {
                                 itemAEliminar = item

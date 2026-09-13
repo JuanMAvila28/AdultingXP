@@ -3,6 +3,7 @@ import SwiftUI
 struct TareasView: View {
     @State private var viewModel = TareasViewModel()
     @State private var mostrandoCrear = false
+    @State private var tareaAEditar: Tarea? = nil
     @State private var tareaAEliminar: Tarea? = nil
     @State private var mostrandoConfirmacion = false
 
@@ -33,6 +34,11 @@ struct TareasView: View {
                     viewModel.agregar(tarea)
                 }
             }
+            .sheet(item: $tareaAEditar) { tarea in
+                EditarTareaView(tarea: tarea) { actualizada in
+                    viewModel.actualizar(actualizada)
+                }
+            }
             .confirmationDialog(
                 "Eliminar «\(tareaAEliminar?.titulo ?? "")»",
                 isPresented: $mostrandoConfirmacion,
@@ -60,6 +66,12 @@ struct TareasView: View {
                 Section("Pendientes") {
                     ForEach(viewModel.tareasPendientes) { tarea in
                         TareaPendienteRow(tarea: tarea, onCompletar: { viewModel.completar(tarea) })
+                            .swipeActions(edge: .leading) {
+                                Button { tareaAEditar = tarea } label: {
+                                    Label("Editar", systemImage: "pencil")
+                                }
+                                .tint(.blue)
+                            }
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     tareaAEliminar = tarea

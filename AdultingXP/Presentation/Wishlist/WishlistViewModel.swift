@@ -44,6 +44,12 @@ final class WishlistViewModel {
         wishlistRepo.guardar(items)
     }
 
+    func actualizar(_ item: ItemWishlist) {
+        guard let i = items.firstIndex(where: { $0.id == item.id }) else { return }
+        items[i] = item
+        wishlistRepo.guardar(items)
+    }
+
     func eliminar(_ item: ItemWishlist) {
         items.removeAll { $0.id == item.id }
         wishlistRepo.guardar(items)
