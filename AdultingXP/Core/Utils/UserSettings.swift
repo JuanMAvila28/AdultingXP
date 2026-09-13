@@ -7,9 +7,10 @@ enum UserSettings {
     enum Keys {
         static let diaCorteSemanal  = "diaCorteSemanal"
         static let tasaCambio       = "tasaCambio"
-        static let recordatorioOn   = "recordatorioOn"
-        static let recordatorioHora = "recordatorioHora"
-        static let recordatorioMin  = "recordatorioMin"
+        static let recordatorioOn    = "recordatorioOn"
+        static let recordatorioHora  = "recordatorioHora"
+        static let recordatorioMin   = "recordatorioMin"
+        static let onboardingMostrado = "onboardingMostrado"
     }
 
     /// Día de la semana en que se reinicia el período semanal.

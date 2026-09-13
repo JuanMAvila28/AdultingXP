@@ -1,6 +1,8 @@
 import SwiftUI
 
 struct RootView: View {
+    @AppStorage(UserSettings.Keys.onboardingMostrado) private var onboardingMostrado = false
+
     var body: some View {
         TabView {
             ResumenView()
@@ -13,6 +15,11 @@ struct RootView: View {
                 .tabItem { Label("Tareas", systemImage: "graduationcap") }
             FinanzasView()
                 .tabItem { Label("Finanzas", systemImage: "creditcard") }
+        }
+        .fullScreenCover(isPresented: .constant(!onboardingMostrado)) {
+            OnboardingView {
+                onboardingMostrado = true
+            }
         }
     }
 }
