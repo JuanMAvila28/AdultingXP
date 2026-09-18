@@ -6,6 +6,7 @@ struct HabitosView: View {
     @State private var habitoAEditar: Habito? = nil
     @State private var habitoAEliminar: Habito? = nil
     @State private var mostrandoConfirmacion = false
+    @State private var habitoSeleccionado: Habito? = nil
 
     var body: some View {
         NavigationStack {
@@ -78,14 +79,16 @@ struct HabitosView: View {
             ForEach(viewModel.habitosAgrupados, id: \.categoria) { grupo in
                 Section(grupo.categoria) {
                     ForEach(grupo.items) { habito in
-                        ZStack(alignment: .leading) {
-                            NavigationLink(value: habito) { EmptyView() }.opacity(0)
+                        Button {
+                            habitoSeleccionado = habito
+                        } label: {
                             HabitoRow(
                                 habito: habito,
                                 completadoHoy: viewModel.estaCompletadoHoy(habito),
                                 onCompletar: { viewModel.completar(habito) }
                             )
                         }
+                        .buttonStyle(.plain)
                         .swipeActions(edge: .leading) {
                             Button {
                                 habitoAEditar = habito
@@ -105,11 +108,11 @@ struct HabitosView: View {
                     }
                 }
             }
-            .navigationDestination(for: Habito.self) { habito in
-                HabitoDetailView(habito: habito, registros: viewModel.registros)
-            }
         }
         .listStyle(.insetGrouped)
+        .navigationDestination(item: $habitoSeleccionado) { habito in
+            HabitoDetailView(habito: habito, registros: viewModel.registros)
+        }
         .animation(AppAnimation.standard, value: viewModel.filtroCategoria)
     }
 
