@@ -52,7 +52,7 @@ struct HabitoDetailView: View {
                     Text("\(habito.categoria) · \(habito.frecuencia.label)")
                         .font(.appCaption)
                         .foregroundStyle(.secondary)
-                    Text("\(habito.esBueno ? "+" : "−")\(habito.puntajeBase) pts por completación")
+                    Text("\(habito.esBueno ? "+" : "−")\(habito.puntajeBase) pts por ocurrencia")
                         .font(.appCaption)
                         .foregroundStyle(habito.esBueno ? Color.appPositive : Color.appNegative)
                 }
@@ -66,7 +66,7 @@ struct HabitoDetailView: View {
     private var statsSection: some View {
         Section {
             HStack {
-                DetalleStatCell(titulo: "Completado", valor: "\(registrosCompletacion.count)×")
+                DetalleStatCell(titulo: "Ocurrencias", valor: "×\(registrosCompletacion.count)")
                 Divider()
                 DetalleStatCell(
                     titulo: "Puntos",

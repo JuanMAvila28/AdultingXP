@@ -6,7 +6,7 @@ final class HabitosViewModel {
 
     private let habitoRepo: any HabitoRepositoryProtocol
     private let registroRepo: any RegistroPuntosRepositoryProtocol
-    private let completarUseCase: CompletarHabitoUseCase
+    private let registrarUseCase: RegistrarOcurrenciaHabitoUseCase
 
     var habitos: [Habito] = []
     var registros: [RegistroPuntos] = []
@@ -32,7 +32,10 @@ final class HabitosViewModel {
     ) {
         self.habitoRepo = habitoRepo
         self.registroRepo = registroRepo
-        self.completarUseCase = CompletarHabitoUseCase(habitoRepo: habitoRepo, registroRepo: registroRepo)
+        self.registrarUseCase = RegistrarOcurrenciaHabitoUseCase(
+            habitoRepo: habitoRepo,
+            registroRepo: registroRepo
+        )
         habitos = habitoRepo.cargar()
         registros = registroRepo.cargar()
         resetearRachasRotas()
@@ -56,8 +59,10 @@ final class HabitosViewModel {
         habitoRepo.guardar(habitos)
     }
 
-    func completar(_ habito: Habito) {
-        let resultado = completarUseCase.ejecutar(
+    /// Registra una ocurrencia del hábito. Devuelve el ID del RegistroPuntos creado (para undo).
+    @discardableResult
+    func registrar(_ habito: Habito) -> UUID? {
+        let resultado = registrarUseCase.ejecutar(
             habito: habito,
             todosLosHabitos: habitos,
             registrosActuales: registros
@@ -66,6 +71,41 @@ final class HabitosViewModel {
             habitos[i] = resultado.habitoActualizado
         }
         registros.append(contentsOf: resultado.nuevosRegistros)
+        return resultado.nuevosRegistros.first?.id
+    }
+
+    /// Revierte la ocurrencia con el ID dado y restaura el hábito a su estado previo.
+    func deshacer(habitoAntes: Habito, registroId: UUID) {
+        let resultado = registrarUseCase.deshacerConRegistro(
+            habitoAntes: habitoAntes,
+            registroId: registroId,
+            todosLosHabitos: habitos,
+            registrosActuales: registros
+        )
+        if let i = habitos.firstIndex(where: { $0.id == resultado.habitoRestaurado.id }) {
+            habitos[i] = resultado.habitoRestaurado
+        }
+        registros = registroRepo.cargar()
+    }
+
+    // MARK: — Consultas del día
+
+    func ocurrenciasHoy(_ habito: Habito) -> Int {
+        let cal = Calendar.current
+        return registros.filter {
+            $0.origen == .habito &&
+            $0.concepto == habito.nombre &&
+            cal.isDateInToday($0.fecha)
+        }.count
+    }
+
+    func puntosHoy(_ habito: Habito) -> Int {
+        let cal = Calendar.current
+        return registros.filter {
+            ($0.origen == .habito || $0.origen == .bonusStreak) &&
+            $0.concepto.contains(habito.nombre) &&
+            cal.isDateInToday($0.fecha)
+        }.reduce(0) { $0 + $1.cantidad }
     }
 
     // MARK: — Reset de rachas
@@ -77,13 +117,6 @@ final class HabitosViewModel {
     }
 
     func resetearRachasRotas() {
-        habitos = completarUseCase.resetearRachasRotas(habitos: habitos)
-    }
-
-    // MARK: — Consultas
-
-    func estaCompletadoHoy(_ habito: Habito) -> Bool {
-        guard let fecha = habito.fechaUltimaCompletacion else { return false }
-        return Calendar.current.isDateInToday(fecha)
+        habitos = registrarUseCase.resetearRachasRotas(habitos: habitos)
     }
 }

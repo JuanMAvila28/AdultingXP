@@ -8,6 +8,15 @@ struct HabitosView: View {
     @State private var mostrandoConfirmacion = false
     @State private var habitoSeleccionado: Habito? = nil
 
+    // Undo
+    private struct EstadoUndo: Equatable {
+        static func == (lhs: EstadoUndo, rhs: EstadoUndo) -> Bool { lhs.registroId == rhs.registroId }
+        let habitoAntes: Habito
+        let registroId: UUID
+    }
+    @State private var estadoUndo: EstadoUndo? = nil
+    @State private var tareaToast: Task<Void, Never>? = nil
+
     var body: some View {
         NavigationStack {
             Group {
@@ -84,8 +93,11 @@ struct HabitosView: View {
                         } label: {
                             HabitoRow(
                                 habito: habito,
-                                completadoHoy: viewModel.estaCompletadoHoy(habito),
-                                onCompletar: { viewModel.completar(habito) }
+                                ocurrenciasHoy: viewModel.ocurrenciasHoy(habito),
+                                puntosHoy: viewModel.puntosHoy(habito),
+                                onRegistrar: {
+                                    registrarConUndo(habito)
+                                }
                             )
                         }
                         .buttonStyle(.plain)
@@ -114,7 +126,35 @@ struct HabitosView: View {
             HabitoDetailView(habito: habito, registros: viewModel.registros)
         }
         .animation(AppAnimation.standard, value: viewModel.filtroCategoria)
+        .overlay(alignment: .bottom) {
+            if let undo = estadoUndo {
+                ToastDeshacer(nombre: undo.habitoAntes.nombre) {
+                    tareaToast?.cancel()
+                    viewModel.deshacer(habitoAntes: undo.habitoAntes, registroId: undo.registroId)
+                    estadoUndo = nil
+                }
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .padding(.bottom, 72)
+            }
+        }
+        .animation(AppAnimation.bouncy, value: estadoUndo != nil)
     }
+
+    // MARK: — Undo
+
+    private func registrarConUndo(_ habito: Habito) {
+        let habitoAntes = habito  // captura estado antes de que el ViewModel lo mute
+        guard let regId = viewModel.registrar(habito) else { return }
+
+        tareaToast?.cancel()
+        estadoUndo = EstadoUndo(habitoAntes: habitoAntes, registroId: regId)
+        tareaToast = Task {
+            try? await Task.sleep(for: .seconds(3))
+            await MainActor.run { estadoUndo = nil }
+        }
+    }
+
+    // MARK: — Filtros
 
     private var filtroChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -134,7 +174,7 @@ struct HabitosView: View {
     }
 }
 
-// MARK: — Tarjeta de balance
+// MARK: — Balance
 
 private struct BalanceRow: View {
     let balance: Int
@@ -171,12 +211,17 @@ private struct BalanceRow: View {
 
 private struct HabitoRow: View {
     let habito: Habito
-    let completadoHoy: Bool
-    let onCompletar: () -> Void
+    let ocurrenciasHoy: Int
+    let puntosHoy: Int
+    let onRegistrar: () -> Void
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @ScaledMetric private var emojiFrame: CGFloat = 36
     @State private var escala: CGFloat = 1.0
+
+    private var colorBoton: Color {
+        habito.esBueno ? .appPositive : .appWarning
+    }
 
     var body: some View {
         HStack(spacing: Spacing.md) {
@@ -197,35 +242,64 @@ private struct HabitoRow: View {
                 }
                 .font(.appCaption)
                 .foregroundStyle(.secondary)
+
+                if ocurrenciasHoy > 0 {
+                    HStack(spacing: Spacing.xs) {
+                        Text("×\(ocurrenciasHoy) hoy")
+                        Text("·")
+                        Text("\(puntosHoy >= 0 ? "+" : "")\(puntosHoy) pts")
+                            .foregroundStyle(puntosHoy >= 0 ? Color.appPositive : Color.appNegative)
+                    }
+                    .font(.appCaption)
+                    .contentTransition(.numericText())
+                    .animation(AppAnimation.standard, value: ocurrenciasHoy)
+                }
             }
 
             Spacer()
 
             Button {
-                guard !completadoHoy else { return }
-                onCompletar()
+                onRegistrar()
                 if !reduceMotion {
-                    escala = 1.3
+                    escala = 1.35
                     withAnimation(AppAnimation.bouncy) { escala = 1.0 }
                 }
             } label: {
-                Image(systemName: completadoHoy
-                      ? "checkmark.circle.fill"
-                      : (habito.esBueno ? "checkmark.circle" : "minus.circle"))
+                Image(systemName: ocurrenciasHoy > 0 ? "plus.circle.fill" : "plus.circle")
                     .font(.title2)
-                    .foregroundStyle(completadoHoy
-                                     ? Color.secondary
-                                     : (habito.esBueno ? Color.appPositive : Color.appNegative))
+                    .foregroundStyle(colorBoton)
                     .scaleEffect(escala)
-                    .animation(AppAnimation.standard, value: completadoHoy)
             }
             .buttonStyle(.plain)
-            .disabled(completadoHoy)
-            .sensoryFeedback(.success, trigger: completadoHoy)
-            .accessibilityLabel(completadoHoy ? "Completado" : "Marcar como completado")
-            .accessibilityHint(completadoHoy ? "" : "Registra \(habito.nombre) y suma \(habito.puntajeBase) puntos")
+            .sensoryFeedback(.success, trigger: ocurrenciasHoy)
+            .accessibilityLabel("Registrar \(habito.nombre)")
+            .accessibilityHint("\(habito.esBueno ? "Suma" : "Resta") \(habito.puntajeBase) puntos")
         }
         .padding(.vertical, Spacing.xs)
+    }
+}
+
+// MARK: — Toast de deshacer
+
+private struct ToastDeshacer: View {
+    let nombre: String
+    let onDeshacer: () -> Void
+
+    var body: some View {
+        HStack(spacing: Spacing.md) {
+            Text("«\(nombre)» registrado")
+                .font(.subheadline)
+                .lineLimit(1)
+            Spacer()
+            Button("Deshacer", action: onDeshacer)
+                .font(.subheadline.bold())
+                .tint(.appAccent)
+        }
+        .padding(.horizontal, Spacing.md)
+        .padding(.vertical, Spacing.sm + 2)
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+        .shadow(color: .black.opacity(0.12), radius: 8, y: 4)
+        .padding(.horizontal, Spacing.md)
     }
 }
 
