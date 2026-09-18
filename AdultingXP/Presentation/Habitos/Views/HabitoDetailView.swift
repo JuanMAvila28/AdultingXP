@@ -170,9 +170,9 @@ private struct DetalleStatCell: View {
                 nombre: "Leer",
                 emoji: "📚",
                 categoria: "Estudio",
-                frecuencia: .diario,
+                esBueno: true,
                 puntajeBase: 20,
-                esBueno: true
+                frecuencia: .diario
             ),
             registros: []
         )

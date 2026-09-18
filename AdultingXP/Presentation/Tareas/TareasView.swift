@@ -210,6 +210,8 @@ private struct TareaPendienteRow: View {
             }
             .buttonStyle(.plain)
             .sensoryFeedback(.success, trigger: tarea.completada)
+            .accessibilityLabel("Completar tarea")
+            .accessibilityHint("Marca \"\(tarea.titulo)\" como entregada")
         }
         .padding(.vertical, Spacing.xs)
     }

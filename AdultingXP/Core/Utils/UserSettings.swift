@@ -10,7 +10,17 @@ enum UserSettings {
         static let recordatorioOn    = "recordatorioOn"
         static let recordatorioHora  = "recordatorioHora"
         static let recordatorioMin   = "recordatorioMin"
-        static let onboardingMostrado = "onboardingMostrado"
+        static let onboardingMostrado   = "onboardingMostrado"
+        // Pomodoro
+        static let pomodoroTrabajo      = "pomodoroTrabajo"
+        static let pomodoroCorto        = "pomodoroCorto"
+        static let pomodoroLargo        = "pomodoroLargo"
+        static let pomodoroSesiones     = "pomodoroSesiones"
+        static let pomodoroPuntos       = "pomodoroPuntos"
+        // Tiempo en pantalla
+        static let pantallaLimite       = "pantallaLimite"
+        static let pantallaPuntos       = "pantallaPuntos"
+        static let pantallaPenalizacion = "pantallaPenalizacion"
     }
 
     /// Día de la semana en que se reinicia el período semanal.

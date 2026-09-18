@@ -81,6 +81,34 @@ final class FinanzasViewModel {
         tarjeta.limiteCredito - deudaTotal(de: tarjeta)
     }
 
+    // MARK: — Forecast
+
+    struct PagoMensual: Identifiable {
+        let id = UUID()
+        let mes: Date
+        let total: Double
+    }
+
+    func forecastMensual(de tarjeta: TarjetaCredito, meses: Int = 3) -> [PagoMensual] {
+        let cal = Calendar.current
+        let activas = compras(de: tarjeta).filter { !$0.estaPagada(diaCorte: tarjeta.diaCorte) }
+        return (1...meses).map { offset -> PagoMensual in
+            let mes = cal.date(byAdding: .month, value: offset, to: .now)!
+            var corteMes = cal.dateComponents([.year, .month], from: mes)
+            corteMes.day = tarjeta.diaCorte
+            let fechaCorte = cal.date(from: corteMes) ?? mes
+
+            let total = activas.reduce(0.0) { acum, compra in
+                let billedFuturo = compra.cuotasBilledAt(fechaCorte, diaCorte: tarjeta.diaCorte)
+                let billedActual = compra.cuotasBilled(diaCorte: tarjeta.diaCorte)
+                return billedFuturo > billedActual && billedFuturo <= compra.numeroCuotas
+                    ? acum + compra.montoPorCuota
+                    : acum
+            }
+            return PagoMensual(mes: mes, total: total)
+        }
+    }
+
     // MARK: — Gráfica
 
     struct DatoDeuda: Identifiable {

@@ -48,6 +48,19 @@ struct Compra: Identifiable, Codable, Hashable {
         return min(numeroCuotas, meses + 1)
     }
 
+    func cuotasBilledAt(_ fecha: Date, diaCorte: Int) -> Int {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month], from: fechaCompra)
+        components.day = diaCorte
+        guard var primerCorte = calendar.date(from: components) else { return 0 }
+        if primerCorte <= fechaCompra {
+            primerCorte = calendar.date(byAdding: .month, value: 1, to: primerCorte) ?? primerCorte
+        }
+        guard fecha >= primerCorte else { return 0 }
+        let meses = calendar.dateComponents([.month], from: primerCorte, to: fecha).month ?? 0
+        return min(numeroCuotas, meses + 1)
+    }
+
     func cuotasRestantes(diaCorte: Int) -> Int {
         max(0, numeroCuotas - cuotasBilled(diaCorte: diaCorte))
     }

@@ -3,7 +3,6 @@ import SwiftUI
 struct WishlistView: View {
     @State private var viewModel = WishlistViewModel()
     @State private var mostrandoCrear = false
-    @State private var mostrandoSettings = false
     @State private var itemAEditar: ItemWishlist? = nil
     @State private var itemAComprar: ItemWishlist? = nil
     @State private var itemAEliminar: ItemWishlist? = nil
@@ -27,19 +26,11 @@ struct WishlistView: View {
             .navigationTitle("Wishlist")
             .onAppear { viewModel.recargarRegistros() }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Configuración", systemImage: "gearshape") {
-                        mostrandoSettings = true
-                    }
-                }
                 ToolbarItem(placement: .primaryAction) {
                     Button("Agregar", systemImage: "plus") {
                         mostrandoCrear = true
                     }
                 }
-            }
-            .sheet(isPresented: $mostrandoSettings) {
-                WishlistSettingsView()
             }
             .sheet(isPresented: $mostrandoCrear) {
                 CrearItemWishlistView { item in
@@ -197,6 +188,8 @@ private struct ItemWishlistRow: View {
                     }
                     .buttonStyle(.plain)
                     .sensoryFeedback(.success, trigger: item.reclamado)
+                    .accessibilityLabel("Reclamar recompensa")
+                    .accessibilityHint("Canjea \(item.costoEnPuntos) puntos por \(item.nombre)")
                 }
             }
 
@@ -204,6 +197,8 @@ private struct ItemWishlistRow: View {
                 ProgressView(value: progreso)
                     .tint(puedeReclamar ? Color.appPositive : Color.appAccent)
                     .animation(AppAnimation.standard, value: progreso)
+                    .accessibilityLabel("Progreso hacia \(item.nombre)")
+                    .accessibilityValue("\(Int(progreso * 100)) por ciento")
             }
         }
         .padding(.vertical, Spacing.xs)

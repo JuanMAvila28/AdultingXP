@@ -41,7 +41,27 @@ struct TarjetaDetailView: View {
                 }
             }
 
-            if !comprasActivas.isEmpty {
+                let forecast = viewModel.forecastMensual(de: tarjeta)
+            if forecast.contains(where: { $0.total > 0 }) {
+                Section("Próximos meses") {
+                    ForEach(forecast) { pago in
+                        HStack {
+                            Text(pago.mes, format: .dateTime.month(.wide).year()
+                                .locale(Locale(identifier: "es_CO")))
+                                .font(.appBody)
+                                .textCase(nil)
+                            Spacer()
+                            Text(pago.total > 0 ? pago.total.moneda : "—")
+                                .font(.appHeadline)
+                                .foregroundStyle(pago.total > 0 ? Color.appNegative : .secondary)
+                                .monospacedDigit()
+                        }
+                        .padding(.vertical, 2)
+                    }
+                }
+            }
+
+        if !comprasActivas.isEmpty {
                 Section("Compras activas") {
                     ForEach(comprasActivas) { compra in
                         CompraRow(compra: compra, diaCorte: tarjeta.diaCorte)

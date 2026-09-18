@@ -3,7 +3,6 @@ import SwiftUI
 struct HabitosView: View {
     @State private var viewModel = HabitosViewModel()
     @State private var mostrandoCrear = false
-    @State private var mostrandoSettings = false
     @State private var habitoAEditar: Habito? = nil
     @State private var habitoAEliminar: Habito? = nil
     @State private var mostrandoConfirmacion = false
@@ -24,19 +23,11 @@ struct HabitosView: View {
             .navigationTitle("Hábitos")
             .onAppear { viewModel.recargar() }
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    Button("Configuración", systemImage: "gearshape") {
-                        mostrandoSettings = true
-                    }
-                }
                 ToolbarItem(placement: .primaryAction) {
                     Button("Agregar", systemImage: "plus") {
                         mostrandoCrear = true
                     }
                 }
-            }
-            .sheet(isPresented: $mostrandoSettings) {
-                HabitosSettingsView()
             }
             .sheet(isPresented: $mostrandoCrear) {
                 CrearHabitoView { habito in
@@ -228,6 +219,8 @@ private struct HabitoRow: View {
             .buttonStyle(.plain)
             .disabled(completadoHoy)
             .sensoryFeedback(.success, trigger: completadoHoy)
+            .accessibilityLabel(completadoHoy ? "Completado" : "Marcar como completado")
+            .accessibilityHint(completadoHoy ? "" : "Registra \(habito.nombre) y suma \(habito.puntajeBase) puntos")
         }
         .padding(.vertical, Spacing.xs)
     }

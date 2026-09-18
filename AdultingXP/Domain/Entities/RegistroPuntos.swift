@@ -5,13 +5,17 @@ enum OrigenPuntos: String, Codable, CaseIterable {
     case tarea
     case wishlist
     case bonusStreak
+    case pomodoro
+    case tiempoPantalla
 
     var label: String {
         switch self {
-        case .habito:       "Hábito"
-        case .tarea:        "Tarea"
-        case .wishlist:     "Wishlist"
-        case .bonusStreak:  "Bonus Racha"
+        case .habito:         "Hábito"
+        case .tarea:          "Tarea"
+        case .wishlist:       "Wishlist"
+        case .bonusStreak:    "Bonus Racha"
+        case .pomodoro:       "Pomodoro"
+        case .tiempoPantalla: "Pantalla"
         }
     }
 }

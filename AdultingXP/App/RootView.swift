@@ -13,6 +13,10 @@ struct RootView: View {
                 .tabItem { Label("Wishlist", systemImage: "gift") }
             TareasView()
                 .tabItem { Label("Tareas", systemImage: "graduationcap") }
+            PomodoroView()
+                .tabItem { Label("Pomodoro", systemImage: "timer") }
+            TiempoPantallaView()
+                .tabItem { Label("Pantalla", systemImage: "eye") }
             FinanzasView()
                 .tabItem { Label("Finanzas", systemImage: "creditcard") }
         }

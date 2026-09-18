@@ -74,4 +74,29 @@ final class NotificacionesService {
     func cancelarTarea(_ tarea: Tarea) {
         center.removePendingNotificationRequests(withIdentifiers: [idTarea(tarea)])
     }
+
+    // MARK: — Pomodoro
+
+    private let idPomodoro = "pomodoro.fin.sesion"
+
+    func programarPomodoro(finEn fechaFin: Date, tipo: TipoSesionPomodoro) {
+        cancelarPomodoro()
+        guard fechaFin > .now else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = tipo.esTrabajo ? "¡Pomodoro completado! 🍅" : "Descanso terminado"
+        content.body  = tipo.esTrabajo ? "Hora de tomar un descanso." : "¡A trabajar!"
+        content.sound = .default
+
+        let componentes = Calendar.current.dateComponents(
+            [.year, .month, .day, .hour, .minute, .second],
+            from: fechaFin
+        )
+        let trigger = UNCalendarNotificationTrigger(dateMatching: componentes, repeats: false)
+        center.add(UNNotificationRequest(identifier: idPomodoro, content: content, trigger: trigger))
+    }
+
+    func cancelarPomodoro() {
+        center.removePendingNotificationRequests(withIdentifiers: [idPomodoro])
+    }
 }

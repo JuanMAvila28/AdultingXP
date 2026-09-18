@@ -86,6 +86,7 @@ private final class ResumenViewModel {
 
 struct ResumenView: View {
     @State private var vm = ResumenViewModel()
+    @State private var mostrandoConfig = false
     @AppStorage(UserSettings.Keys.tasaCambio) private var tasaCambio: Double = 100
 
     var body: some View {
@@ -102,11 +103,19 @@ struct ResumenView: View {
             .navigationTitle("Resumen")
             .onAppear { vm.recargar() }
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button("Configuración", systemImage: "gearshape") {
+                        mostrandoConfig = true
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     ShareLink(item: textoCompartir) {
                         Label("Compartir", systemImage: "square.and.arrow.up")
                     }
                 }
+            }
+            .sheet(isPresented: $mostrandoConfig) {
+                ConfiguracionView()
             }
         }
     }
