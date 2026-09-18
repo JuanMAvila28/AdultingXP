@@ -19,23 +19,41 @@ struct EditarTarjetaView: View {
     @State private var diaPago: Int
     @State private var colorHex: String
 
+    // Cuota de manejo
+    @State private var tieneCuotaManejo: Bool
+    @State private var cuotaManejoTexto: String
+
+    // Interés
+    @State private var tieneInteres: Bool
+    @State private var tasaTexto: String
+
     init(tarjeta: TarjetaCredito, onGuardar: @escaping (TarjetaCredito) -> Void) {
         self.tarjeta = tarjeta
         self.onGuardar = onGuardar
-        _nombre      = State(initialValue: tarjeta.nombre)
-        _banco       = State(initialValue: tarjeta.banco)
-        _limiteTexto = State(initialValue: String(Int(tarjeta.limiteCredito)))
-        _diaCorte    = State(initialValue: tarjeta.diaCorte)
-        _diaPago     = State(initialValue: tarjeta.diaPago)
-        _colorHex    = State(initialValue: tarjeta.colorHex)
+        _nombre           = State(initialValue: tarjeta.nombre)
+        _banco            = State(initialValue: tarjeta.banco)
+        _limiteTexto      = State(initialValue: String(Int(tarjeta.limiteCredito)))
+        _diaCorte         = State(initialValue: tarjeta.diaCorte)
+        _diaPago          = State(initialValue: tarjeta.diaPago)
+        _colorHex         = State(initialValue: tarjeta.colorHex)
+        _tieneCuotaManejo = State(initialValue: tarjeta.cuotaManejo != nil)
+        _cuotaManejoTexto = State(initialValue: tarjeta.cuotaManejo.map { String(Int($0)) } ?? "")
+        _tieneInteres     = State(initialValue: tarjeta.tasaInteres != nil)
+        _tasaTexto        = State(initialValue: tarjeta.tasaInteres.map { String($0) } ?? "")
     }
 
     private var limite: Double { Double(limiteTexto) ?? 0 }
+    private var cuotaManejo: Double? { tieneCuotaManejo ? Double(cuotaManejoTexto) : nil }
+    private var tasaInteres: Double? {
+        tieneInteres ? Double(tasaTexto.replacingOccurrences(of: ",", with: ".")) : nil
+    }
 
     private var formularioValido: Bool {
         !nombre.trimmingCharacters(in: .whitespaces).isEmpty &&
         !banco.trimmingCharacters(in: .whitespaces).isEmpty &&
-        limite > 0
+        limite > 0 &&
+        (!tieneCuotaManejo || (cuotaManejo ?? 0) > 0) &&
+        (!tieneInteres || (tasaInteres ?? 0) > 0)
     }
 
     var body: some View {
@@ -44,16 +62,59 @@ struct EditarTarjetaView: View {
                 Section {
                     TextField("Nombre de la tarjeta", text: $nombre)
                     TextField("Banco", text: $banco)
-                    TextField("Límite de crédito", text: $limiteTexto)
-                        .keyboardType(.decimalPad)
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        TextField("Límite de crédito", text: $limiteTexto)
+                            .keyboardType(.numberPad)
+                        if limite > 0 {
+                            Text(limite.moneda)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 Section("Fechas de facturación") {
                     Picker("Día de corte", selection: $diaCorte) {
-                        ForEach(1...28, id: \.self) { Text("Día \($0)").tag($0) }
+                        ForEach(1...31, id: \.self) { Text("Día \($0)").tag($0) }
                     }
                     Picker("Día de pago", selection: $diaPago) {
-                        ForEach(1...28, id: \.self) { Text("Día \($0)").tag($0) }
+                        ForEach(1...31, id: \.self) { Text("Día \($0)").tag($0) }
+                    }
+                }
+
+                Section {
+                    Toggle("Tiene cuota de manejo", isOn: $tieneCuotaManejo.animation())
+                    if tieneCuotaManejo {
+                        VStack(alignment: .leading, spacing: 4) {
+                            TextField("Valor mensual", text: $cuotaManejoTexto)
+                                .keyboardType(.numberPad)
+                            if let cm = cuotaManejo, cm > 0 {
+                                Text(cm.moneda)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                    }
+                } header: {
+                    Text("Cuota de manejo")
+                }
+
+                Section {
+                    Toggle("Cobra interés", isOn: $tieneInteres.animation())
+                    if tieneInteres {
+                        HStack(spacing: Spacing.sm) {
+                            TextField("Tasa mensual", text: $tasaTexto)
+                                .keyboardType(.decimalPad)
+                            Text("% mensual")
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                } header: {
+                    Text("Interés")
+                } footer: {
+                    if tieneInteres {
+                        Text("Tasa efectiva mensual (TEM). Ejemplo: 2.5 para 2,5%.")
                     }
                 }
 
@@ -76,7 +137,9 @@ struct EditarTarjetaView: View {
                             limiteCredito: limite,
                             diaCorte: diaCorte,
                             diaPago: diaPago,
-                            colorHex: colorHex
+                            colorHex: colorHex,
+                            cuotaManejo: cuotaManejo,
+                            tasaInteres: tasaInteres
                         ))
                         dismiss()
                     }
@@ -116,7 +179,9 @@ struct EditarTarjetaView: View {
             banco: "Bancolombia",
             limiteCredito: 10_000_000,
             diaCorte: 20,
-            diaPago: 10
+            diaPago: 10,
+            cuotaManejo: 18_900,
+            tasaInteres: 2.49
         )
     ) { _ in }
 }

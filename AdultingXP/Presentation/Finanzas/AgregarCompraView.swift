@@ -10,6 +10,7 @@ struct AgregarCompraView: View {
     @State private var descripcion = ""
     @State private var montoTexto = ""
     @State private var numeroCuotas = 1
+    @State private var tieneInteres = false
     @State private var fechaCompra = Date.now
 
     private var monto: Double { Double(montoTexto.replacingOccurrences(of: ",", with: ".")) ?? 0 }
@@ -33,6 +34,9 @@ struct AgregarCompraView: View {
                             Text(n == 1 ? "Contado" : "\(n) cuotas").tag(n)
                         }
                     }
+
+                    Toggle("Con interés", isOn: $tieneInteres)
+                        .tint(.appWarning)
 
                     if numeroCuotas > 1 && monto > 0 {
                         HStack {
@@ -72,6 +76,7 @@ struct AgregarCompraView: View {
                             descripcion: descripcion.trimmingCharacters(in: .whitespaces),
                             montoTotal: monto,
                             numeroCuotas: numeroCuotas,
+                            tieneInteres: tieneInteres,
                             fechaCompra: fechaCompra
                         ))
                         dismiss()

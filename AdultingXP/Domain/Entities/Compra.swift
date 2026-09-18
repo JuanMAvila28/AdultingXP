@@ -1,11 +1,12 @@
 import Foundation
 
-struct Compra: Identifiable, Codable, Hashable {
+struct Compra: Identifiable, Hashable {
     let id: UUID
     let tarjetaId: UUID
     var descripcion: String
     var montoTotal: Double
     var numeroCuotas: Int
+    var tieneInteres: Bool
     var fechaCompra: Date
 
     init(
@@ -14,6 +15,7 @@ struct Compra: Identifiable, Codable, Hashable {
         descripcion: String,
         montoTotal: Double,
         numeroCuotas: Int = 1,
+        tieneInteres: Bool = false,
         fechaCompra: Date = .now
     ) {
         self.id = id
@@ -21,6 +23,7 @@ struct Compra: Identifiable, Codable, Hashable {
         self.descripcion = descripcion
         self.montoTotal = montoTotal
         self.numeroCuotas = numeroCuotas
+        self.tieneInteres = tieneInteres
         self.fechaCompra = fechaCompra
     }
 
@@ -71,5 +74,24 @@ struct Compra: Identifiable, Codable, Hashable {
 
     func estaPagada(diaCorte: Int) -> Bool {
         cuotasRestantes(diaCorte: diaCorte) == 0
+    }
+}
+
+// MARK: — Codable (manual para compatibilidad con JSON previo que no tiene `tieneInteres`)
+
+extension Compra: Codable {
+    enum CodingKeys: String, CodingKey {
+        case id, tarjetaId, descripcion, montoTotal, numeroCuotas, tieneInteres, fechaCompra
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        id           = try c.decode(UUID.self,   forKey: .id)
+        tarjetaId    = try c.decode(UUID.self,   forKey: .tarjetaId)
+        descripcion  = try c.decode(String.self, forKey: .descripcion)
+        montoTotal   = try c.decode(Double.self, forKey: .montoTotal)
+        numeroCuotas = try c.decode(Int.self,    forKey: .numeroCuotas)
+        tieneInteres = try c.decodeIfPresent(Bool.self, forKey: .tieneInteres) ?? false
+        fechaCompra  = try c.decode(Date.self,   forKey: .fechaCompra)
     }
 }

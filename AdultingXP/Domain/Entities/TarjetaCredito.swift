@@ -5,9 +5,11 @@ struct TarjetaCredito: Identifiable, Codable, Hashable {
     var nombre: String
     var banco: String
     var limiteCredito: Double
-    var diaCorte: Int   // 1–28
-    var diaPago: Int    // 1–28
+    var diaCorte: Int   // 1–31
+    var diaPago: Int    // 1–31
     var colorHex: String
+    var cuotaManejo: Double?    // nil = sin cuota de manejo; valor = monto mensual
+    var tasaInteres: Double?    // nil = sin interés; valor = % mensual efectivo
 
     init(
         id: UUID = UUID(),
@@ -16,7 +18,9 @@ struct TarjetaCredito: Identifiable, Codable, Hashable {
         limiteCredito: Double,
         diaCorte: Int,
         diaPago: Int,
-        colorHex: String = "#5E4ADB"
+        colorHex: String = "#5E4ADB",
+        cuotaManejo: Double? = nil,
+        tasaInteres: Double? = nil
     ) {
         self.id = id
         self.nombre = nombre
@@ -25,5 +29,7 @@ struct TarjetaCredito: Identifiable, Codable, Hashable {
         self.diaCorte = diaCorte
         self.diaPago = diaPago
         self.colorHex = colorHex
+        self.cuotaManejo = cuotaManejo
+        self.tasaInteres = tasaInteres
     }
 }

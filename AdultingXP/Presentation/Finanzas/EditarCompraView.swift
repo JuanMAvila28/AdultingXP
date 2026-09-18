@@ -11,6 +11,7 @@ struct EditarCompraView: View {
     @State private var descripcion: String
     @State private var montoTexto: String
     @State private var numeroCuotas: Int
+    @State private var tieneInteres: Bool
     @State private var fechaCompra: Date
 
     init(compra: Compra, onGuardar: @escaping (Compra) -> Void) {
@@ -19,6 +20,7 @@ struct EditarCompraView: View {
         _descripcion  = State(initialValue: compra.descripcion)
         _montoTexto   = State(initialValue: String(Int(compra.montoTotal)))
         _numeroCuotas = State(initialValue: compra.numeroCuotas)
+        _tieneInteres = State(initialValue: compra.tieneInteres)
         _fechaCompra  = State(initialValue: compra.fechaCompra)
     }
 
@@ -43,6 +45,9 @@ struct EditarCompraView: View {
                             Text(n == 1 ? "Contado" : "\(n) cuotas").tag(n)
                         }
                     }
+
+                    Toggle("Con interés", isOn: $tieneInteres)
+                        .tint(.appWarning)
 
                     if numeroCuotas > 1 && monto > 0 {
                         HStack {
@@ -83,6 +88,7 @@ struct EditarCompraView: View {
                             descripcion: descripcion.trimmingCharacters(in: .whitespaces),
                             montoTotal: monto,
                             numeroCuotas: numeroCuotas,
+                            tieneInteres: tieneInteres,
                             fechaCompra: fechaCompra
                         ))
                         dismiss()
