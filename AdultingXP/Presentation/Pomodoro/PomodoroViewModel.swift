@@ -117,8 +117,9 @@ final class PomodoroViewModel {
     }
 
     func iniciarSiguiente() {
+        let tipo = siguienteTipo
         sesionActual = nil
-        iniciar(tipo: siguienteTipo)
+        iniciar(tipo: tipo)
     }
 
     func pausar() {
