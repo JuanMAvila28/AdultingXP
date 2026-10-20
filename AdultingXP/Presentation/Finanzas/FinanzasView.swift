@@ -76,7 +76,7 @@ struct FinanzasView: View {
                         TarjetaCard(
                             tarjeta: tarjeta,
                             deudaTotal: viewModel.deudaTotal(de: tarjeta),
-                            cuotaMes: viewModel.cuotaMes(de: tarjeta),
+                            valorAPagar: viewModel.valorAPagar(de: tarjeta),
                             cupoDisponible: viewModel.cupoDisponible(de: tarjeta)
                         )
                     }
@@ -178,7 +178,7 @@ private struct ResumenDeudaRow: View {
 private struct TarjetaCard: View {
     let tarjeta: TarjetaCredito
     let deudaTotal: Double
-    let cuotaMes: Double
+    let valorAPagar: Double
     let cupoDisponible: Double
 
     var body: some View {
@@ -212,10 +212,10 @@ private struct TarjetaCard: View {
                     Spacer()
 
                     VStack(alignment: .trailing, spacing: 2) {
-                        Text("Cuota próx. mes")
+                        Text("A pagar")
                             .font(.appCaption)
                             .foregroundStyle(.white.opacity(0.75))
-                        Text(cuotaMes.moneda)
+                        Text(valorAPagar.moneda)
                             .font(.appHeadline)
                             .foregroundStyle(.white)
                     }

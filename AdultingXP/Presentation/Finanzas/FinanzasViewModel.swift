@@ -5,9 +5,11 @@ import Observation
 final class FinanzasViewModel {
     private let tarjetaRepo: any TarjetaCreditoRepositoryProtocol
     private let compraRepo: any CompraRepositoryProtocol
+    private let pagoRepo: any PagoRepositoryProtocol
 
     var tarjetas: [TarjetaCredito] = []
     var compras: [Compra] = []
+    var pagos: [Pago] = []
 
     var deudaGlobal: Double {
         tarjetas.reduce(0) { $0 + deudaTotal(de: $1) }
@@ -15,15 +17,18 @@ final class FinanzasViewModel {
 
     init(
         tarjetaRepo: any TarjetaCreditoRepositoryProtocol = TarjetaCreditoRepository(),
-        compraRepo: any CompraRepositoryProtocol = CompraRepository()
+        compraRepo: any CompraRepositoryProtocol = CompraRepository(),
+        pagoRepo: any PagoRepositoryProtocol = PagoRepository()
     ) {
         self.tarjetaRepo = tarjetaRepo
         self.compraRepo = compraRepo
+        self.pagoRepo = pagoRepo
         tarjetas = tarjetaRepo.cargar()
         compras = compraRepo.cargar()
+        pagos = pagoRepo.cargar()
     }
 
-    // MARK: — Acciones
+    // MARK: — Acciones tarjetas
 
     func agregar(_ tarjeta: TarjetaCredito) {
         tarjetas.append(tarjeta)
@@ -39,9 +44,13 @@ final class FinanzasViewModel {
     func eliminar(_ tarjeta: TarjetaCredito) {
         compras.removeAll { $0.tarjetaId == tarjeta.id }
         compraRepo.guardar(compras)
+        pagos.removeAll { $0.tarjetaId == tarjeta.id }
+        pagoRepo.guardar(pagos)
         tarjetas.removeAll { $0.id == tarjeta.id }
         tarjetaRepo.guardar(tarjetas)
     }
+
+    // MARK: — Acciones compras
 
     func agregarCompra(_ compra: Compra) {
         compras.append(compra)
@@ -59,10 +68,28 @@ final class FinanzasViewModel {
         compraRepo.guardar(compras)
     }
 
+    // MARK: — Acciones pagos
+
+    func agregarPago(_ pago: Pago) {
+        pagos.append(pago)
+        pagoRepo.guardar(pagos)
+    }
+
+    func eliminarPago(_ pago: Pago) {
+        pagos.removeAll { $0.id == pago.id }
+        pagoRepo.guardar(pagos)
+    }
+
     // MARK: — Consultas por tarjeta
 
     func compras(de tarjeta: TarjetaCredito) -> [Compra] {
         compras.filter { $0.tarjetaId == tarjeta.id }
+    }
+
+    func pagos(de tarjeta: TarjetaCredito) -> [Pago] {
+        pagos
+            .filter { $0.tarjetaId == tarjeta.id }
+            .sorted { $0.fechaPago < $1.fechaPago }
     }
 
     func deudaTotal(de tarjeta: TarjetaCredito) -> Double {
@@ -75,6 +102,19 @@ final class FinanzasViewModel {
         compras(de: tarjeta)
             .filter { !$0.estaPagada(diaCorte: tarjeta.diaCorte) }
             .reduce(0) { $0 + $1.montoPorCuota }
+    }
+
+    /// Saldo del mes anterior que no fue pagado, derivado del último pago registrado.
+    func saldoAnterior(de tarjeta: TarjetaCredito) -> Double {
+        guard let ultimo = pagos(de: tarjeta).last else { return 0 }
+        return max(0, ultimo.balanceAntes - ultimo.montoPagado)
+    }
+
+    /// Total real a pagar este mes: cuotas + cuota de manejo + saldo anterior no pagado.
+    func valorAPagar(de tarjeta: TarjetaCredito) -> Double {
+        cuotaMes(de: tarjeta)
+        + (tarjeta.cuotaManejo ?? 0)
+        + saldoAnterior(de: tarjeta)
     }
 
     func cupoDisponible(de tarjeta: TarjetaCredito) -> Double {
@@ -98,13 +138,14 @@ final class FinanzasViewModel {
             corteMes.day = tarjeta.diaCorte
             let fechaCorte = cal.date(from: corteMes) ?? mes
 
-            let total = activas.reduce(0.0) { acum, compra in
-                let billedFuturo = compra.cuotasBilledAt(fechaCorte, diaCorte: tarjeta.diaCorte)
-                let billedActual = compra.cuotasBilled(diaCorte: tarjeta.diaCorte)
+            let cuotas = activas.reduce(0.0) { acum, compra in
+                let billedFuturo  = compra.cuotasBilledAt(fechaCorte, diaCorte: tarjeta.diaCorte)
+                let billedActual  = compra.cuotasBilled(diaCorte: tarjeta.diaCorte)
                 return billedFuturo > billedActual && billedFuturo <= compra.numeroCuotas
                     ? acum + compra.montoPorCuota
                     : acum
             }
+            let total = cuotas + (tarjeta.cuotaManejo ?? 0)
             return PagoMensual(mes: mes, total: total)
         }
     }

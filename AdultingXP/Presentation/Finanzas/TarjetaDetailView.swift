@@ -6,9 +6,12 @@ struct TarjetaDetailView: View {
 
     @State private var mostrandoAgregarCompra = false
     @State private var mostrandoSimulador = false
+    @State private var mostrandoRegistrarPago = false
     @State private var compraAEditar: Compra? = nil
     @State private var compraAEliminar: Compra? = nil
-    @State private var mostrandoConfirmacion = false
+    @State private var pagoAEliminar: Pago? = nil
+    @State private var mostrandoConfirmacionCompra = false
+    @State private var mostrandoConfirmacionPago = false
 
     private var comprasActivas: [Compra] {
         viewModel.compras(de: tarjeta).filter { !$0.estaPagada(diaCorte: tarjeta.diaCorte) }
@@ -18,15 +21,23 @@ struct TarjetaDetailView: View {
         viewModel.compras(de: tarjeta).filter { $0.estaPagada(diaCorte: tarjeta.diaCorte) }
     }
 
+    private var historialPagos: [Pago] {
+        viewModel.pagos(de: tarjeta).reversed()
+    }
+
     var body: some View {
         List {
             Section {
                 TarjetaResumenRow(
                     deudaTotal: viewModel.deudaTotal(de: tarjeta),
                     cuotaMes: viewModel.cuotaMes(de: tarjeta),
+                    cuotaManejo: tarjeta.cuotaManejo ?? 0,
+                    saldoAnterior: viewModel.saldoAnterior(de: tarjeta),
+                    valorAPagar: viewModel.valorAPagar(de: tarjeta),
                     cupoDisponible: viewModel.cupoDisponible(de: tarjeta),
                     diaCorte: tarjeta.diaCorte,
-                    diaPago: tarjeta.diaPago
+                    diaPago: tarjeta.diaPago,
+                    ultimoPago: historialPagos.first
                 )
             }
 
@@ -41,7 +52,7 @@ struct TarjetaDetailView: View {
                 }
             }
 
-                let forecast = viewModel.forecastMensual(de: tarjeta)
+            let forecast = viewModel.forecastMensual(de: tarjeta)
             if forecast.contains(where: { $0.total > 0 }) {
                 Section("Próximos meses") {
                     ForEach(forecast) { pago in
@@ -61,7 +72,7 @@ struct TarjetaDetailView: View {
                 }
             }
 
-        if !comprasActivas.isEmpty {
+            if !comprasActivas.isEmpty {
                 Section("Compras activas") {
                     ForEach(comprasActivas) { compra in
                         CompraRow(compra: compra, diaCorte: tarjeta.diaCorte)
@@ -74,7 +85,7 @@ struct TarjetaDetailView: View {
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     compraAEliminar = compra
-                                    mostrandoConfirmacion = true
+                                    mostrandoConfirmacionCompra = true
                                 } label: {
                                     Label("Eliminar", systemImage: "trash")
                                 }
@@ -90,7 +101,23 @@ struct TarjetaDetailView: View {
                             .swipeActions(edge: .trailing, allowsFullSwipe: false) {
                                 Button(role: .destructive) {
                                     compraAEliminar = compra
-                                    mostrandoConfirmacion = true
+                                    mostrandoConfirmacionCompra = true
+                                } label: {
+                                    Label("Eliminar", systemImage: "trash")
+                                }
+                            }
+                    }
+                }
+            }
+
+            if !historialPagos.isEmpty {
+                Section("Historial de pagos") {
+                    ForEach(historialPagos) { pago in
+                        PagoRow(pago: pago)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    pagoAEliminar = pago
+                                    mostrandoConfirmacionPago = true
                                 } label: {
                                     Label("Eliminar", systemImage: "trash")
                                 }
@@ -108,7 +135,10 @@ struct TarjetaDetailView: View {
                     mostrandoSimulador = true
                 }
             }
-            ToolbarItem(placement: .primaryAction) {
+            ToolbarItemGroup(placement: .primaryAction) {
+                Button("Registrar pago", systemImage: "banknote") {
+                    mostrandoRegistrarPago = true
+                }
                 Button("Agregar compra", systemImage: "plus") {
                     mostrandoAgregarCompra = true
                 }
@@ -122,6 +152,14 @@ struct TarjetaDetailView: View {
                 cupoActual: viewModel.cupoDisponible(de: tarjeta)
             )
         }
+        .sheet(isPresented: $mostrandoRegistrarPago) {
+            RegistrarPagoView(
+                tarjeta: tarjeta,
+                valorAPagar: viewModel.valorAPagar(de: tarjeta)
+            ) { pago in
+                viewModel.agregarPago(pago)
+            }
+        }
         .sheet(isPresented: $mostrandoAgregarCompra) {
             AgregarCompraView(tarjetaId: tarjeta.id) { compra in
                 viewModel.agregarCompra(compra)
@@ -134,7 +172,7 @@ struct TarjetaDetailView: View {
         }
         .confirmationDialog(
             "Eliminar «\(compraAEliminar?.descripcion ?? "")»",
-            isPresented: $mostrandoConfirmacion,
+            isPresented: $mostrandoConfirmacionCompra,
             titleVisibility: .visible
         ) {
             Button("Eliminar", role: .destructive) {
@@ -144,6 +182,18 @@ struct TarjetaDetailView: View {
         } message: {
             Text("Esta acción no se puede deshacer.")
         }
+        .confirmationDialog(
+            "Eliminar pago",
+            isPresented: $mostrandoConfirmacionPago,
+            titleVisibility: .visible
+        ) {
+            Button("Eliminar", role: .destructive) {
+                if let pago = pagoAEliminar { viewModel.eliminarPago(pago) }
+                pagoAEliminar = nil
+            }
+        } message: {
+            Text("El saldo anterior se recalculará automáticamente.")
+        }
     }
 }
 
@@ -152,14 +202,33 @@ struct TarjetaDetailView: View {
 private struct TarjetaResumenRow: View {
     let deudaTotal: Double
     let cuotaMes: Double
+    let cuotaManejo: Double
+    let saldoAnterior: Double
+    let valorAPagar: Double
     let cupoDisponible: Double
     let diaCorte: Int
     let diaPago: Int
+    let ultimoPago: Pago?
+
+    private var tieneComponentesExtra: Bool {
+        cuotaManejo > 0 || saldoAnterior > 0
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: Spacing.xs) {
+                    Text("Total a pagar")
+                        .font(.appCaption)
+                        .foregroundStyle(.secondary)
+                    Text(valorAPagar.moneda)
+                        .font(.appPoints)
+                        .foregroundStyle(valorAPagar > 0 ? Color.appNegative : Color.appPositive)
+                        .contentTransition(.numericText())
+                        .animation(AppAnimation.standard, value: valorAPagar)
+                }
+                Spacer()
+                VStack(alignment: .trailing, spacing: Spacing.xs) {
                     Text("Deuda total")
                         .font(.appCaption)
                         .foregroundStyle(.secondary)
@@ -169,17 +238,10 @@ private struct TarjetaResumenRow: View {
                         .contentTransition(.numericText())
                         .animation(AppAnimation.standard, value: deudaTotal)
                 }
-                Spacer()
-                VStack(alignment: .trailing, spacing: Spacing.xs) {
-                    Text("Cuota próx. mes")
-                        .font(.appCaption)
-                        .foregroundStyle(.secondary)
-                    Text(cuotaMes.moneda)
-                        .font(.appPoints)
-                        .foregroundStyle(cuotaMes > 0 ? Color.appNegative : .secondary)
-                        .contentTransition(.numericText())
-                        .animation(AppAnimation.standard, value: cuotaMes)
-                }
+            }
+
+            if tieneComponentesExtra {
+                desglose
             }
 
             Divider()
@@ -202,8 +264,51 @@ private struct TarjetaResumenRow: View {
                         .font(.appHeadline)
                 }
             }
+
+            if let pago = ultimoPago {
+                Divider()
+                HStack {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(Color.appPositive)
+                        .font(.appCaption)
+                    Text("Último pago: \(pago.montoPagado.moneda)")
+                        .font(.appCaption)
+                        .foregroundStyle(Color.appPositive)
+                    Spacer()
+                    Text(pago.fechaPago.etiquetaDia)
+                        .font(.appCaption)
+                        .foregroundStyle(.secondary)
+                }
+            }
         }
         .padding(.vertical, Spacing.xs)
+    }
+
+    private var desglose: some View {
+        VStack(alignment: .leading, spacing: Spacing.xs) {
+            desgloseRow("Cuotas del mes", cuotaMes)
+            if cuotaManejo > 0 {
+                desgloseRow("Cuota de manejo", cuotaManejo)
+            }
+            if saldoAnterior > 0 {
+                desgloseRow("Saldo anterior", saldoAnterior)
+                    .foregroundStyle(Color.appWarning)
+            }
+        }
+        .padding(.horizontal, Spacing.sm)
+        .padding(.vertical, Spacing.xs)
+        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func desgloseRow(_ label: String, _ valor: Double) -> some View {
+        HStack {
+            Text(label)
+                .font(.appCaption)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text(valor.moneda)
+                .font(.appCaption.monospacedDigit())
+        }
     }
 }
 
@@ -224,6 +329,11 @@ private struct CompraRow: View {
                     .font(.appHeadline)
                     .strikethrough(pagada)
                     .foregroundStyle(pagada ? .secondary : .primary)
+                if compra.tieneInteres {
+                    Image(systemName: "percent")
+                        .font(.appCaption)
+                        .foregroundStyle(Color.appWarning)
+                }
                 Spacer()
                 if !pagada {
                     Text(compra.montoPorCuota.moneda)
@@ -252,6 +362,40 @@ private struct CompraRow: View {
     }
 }
 
+// MARK: — Fila de pago
+
+private struct PagoRow: View {
+    let pago: Pago
+
+    var body: some View {
+        HStack {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(pago.montoPagado.moneda)
+                    .font(.appHeadline)
+                    .foregroundStyle(Color.appPositive)
+                Text(pago.fechaPago.etiquetaDia)
+                    .font(.appCaption)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+            if pago.balanceAntes > pago.montoPagado {
+                VStack(alignment: .trailing, spacing: Spacing.xs) {
+                    Text("Saldo no pagado")
+                        .font(.appCaption)
+                        .foregroundStyle(.secondary)
+                    Text((pago.balanceAntes - pago.montoPagado).moneda)
+                        .font(.appCaption.monospacedDigit())
+                        .foregroundStyle(Color.appWarning)
+                }
+            } else {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(Color.appPositive)
+            }
+        }
+        .padding(.vertical, Spacing.xs)
+    }
+}
+
 // MARK: — Preview
 
 #Preview {
@@ -262,7 +406,8 @@ private struct CompraRow: View {
                 banco: "Bancolombia",
                 limiteCredito: 10_000_000,
                 diaCorte: 20,
-                diaPago: 10
+                diaPago: 10,
+                cuotaManejo: 18_900
             ),
             viewModel: FinanzasViewModel()
         )
