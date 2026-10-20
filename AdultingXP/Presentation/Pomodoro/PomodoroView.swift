@@ -8,6 +8,9 @@ struct PomodoroView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 32) {
+                    if !vm.notificacionesHabilitadas {
+                        bannerNotificaciones
+                    }
                     anilloSection
                     controlesSection
                     contadorSection
@@ -20,6 +23,7 @@ struct PomodoroView: View {
             }
             .navigationTitle("Pomodoro")
             .navigationBarTitleDisplayMode(.inline)
+            .task { await vm.pedirPermisoNotificaciones() }
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button { mostrarConfig = true } label: {
@@ -36,6 +40,32 @@ struct PomodoroView: View {
                 PomodoroSettingsView()
             }
         }
+    }
+
+    // MARK: — Banner notificaciones
+
+    private var bannerNotificaciones: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "bell.slash.fill")
+                .foregroundStyle(Color.appWarning)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Notificaciones desactivadas")
+                    .font(.appCaption.bold())
+                Text("No recibirás aviso al terminar la sesión.")
+                    .font(.appCaption)
+                    .foregroundStyle(Color.appSecondary)
+            }
+            Spacer()
+            Button("Activar") {
+                if let url = URL(string: UIApplication.openNotificationSettingsURLString) {
+                    UIApplication.shared.open(url)
+                }
+            }
+            .font(.appCaption.bold())
+            .foregroundStyle(Color.appAccent)
+        }
+        .padding(Spacing.md)
+        .background(Color.appWarning.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: — Anillo

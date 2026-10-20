@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import UserNotifications
 
 @Observable
 final class PomodoroViewModel {
@@ -29,6 +30,7 @@ final class PomodoroViewModel {
     var puntosPorSesion:  Int { intSetting(UserSettings.Keys.pomodoroPuntos,   default: 10) }
 
     var balanceGlobal: Int { registros.reduce(0) { $0 + $1.cantidad } }
+    var notificacionesHabilitadas: Bool = true
 
     // MARK: — Estado derivado
 
@@ -161,6 +163,18 @@ final class PomodoroViewModel {
 
     func recargar() {
         registros = registroRepo.cargar()
+    }
+
+    func pedirPermisoNotificaciones() async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        switch settings.authorizationStatus {
+        case .notDetermined:
+            notificacionesHabilitadas = await notificaciones.solicitarPermiso()
+        case .authorized, .provisional, .ephemeral:
+            notificacionesHabilitadas = true
+        default:
+            notificacionesHabilitadas = false
+        }
     }
 
     // MARK: — Privado
