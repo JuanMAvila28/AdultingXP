@@ -7,6 +7,7 @@ struct HabitosView: View {
     @State private var habitoAEliminar: Habito? = nil
     @State private var mostrandoConfirmacion = false
     @State private var habitoSeleccionado: Habito? = nil
+    @State private var mostrandoOrdenar = false
 
     // Undo
     private struct EstadoUndo: Equatable {
@@ -38,11 +39,21 @@ struct HabitosView: View {
                         mostrandoCrear = true
                     }
                 }
+                if !viewModel.habitos.isEmpty {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button("Ordenar", systemImage: "arrow.up.arrow.down") {
+                            mostrandoOrdenar = true
+                        }
+                    }
+                }
             }
             .sheet(isPresented: $mostrandoCrear) {
                 CrearHabitoView { habito in
                     viewModel.agregar(habito)
                 }
+            }
+            .sheet(isPresented: $mostrandoOrdenar) {
+                OrdenarHabitosView(viewModel: viewModel)
             }
             .sheet(item: $habitoAEditar) { habito in
                 EditarHabitoView(habito: habito) { actualizado in

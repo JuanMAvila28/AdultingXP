@@ -7,23 +7,36 @@ final class HabitosViewModel {
     private let habitoRepo: any HabitoRepositoryProtocol
     private let registroRepo: any RegistroPuntosRepositoryProtocol
     private let registrarUseCase: RegistrarOcurrenciaHabitoUseCase
+    private let ordenCatFilename = "ordenes_categorias.json"
 
     var habitos: [Habito] = []
     var registros: [RegistroPuntos] = []
     var filtroCategoria: String? = nil
+    var ordenesCategorias: [String] = []
 
     var balanceGlobal: Int {
         registros.reduce(0) { $0 + $1.cantidad }
     }
 
     var categorias: [String] {
-        Array(Set(habitos.map(\.categoria))).sorted()
+        let todas = Set(habitos.map(\.categoria))
+        let conocidas = ordenesCategorias.filter { todas.contains($0) }
+        let nuevas = todas.subtracting(Set(ordenesCategorias)).sorted()
+        return conocidas + Array(nuevas)
     }
 
     var habitosAgrupados: [(categoria: String, items: [Habito])] {
         let fuente = filtroCategoria.map { f in habitos.filter { $0.categoria == f } } ?? habitos
         let agrupados = Dictionary(grouping: fuente, by: \.categoria)
-        return agrupados.keys.sorted().map { cat in (categoria: cat, items: agrupados[cat] ?? []) }
+        let catOrdenadas: [String] = {
+            let conocidas = ordenesCategorias.filter { agrupados[$0] != nil }
+            let nuevas = agrupados.keys.filter { !ordenesCategorias.contains($0) }.sorted()
+            return conocidas + nuevas
+        }()
+        return catOrdenadas.compactMap { cat in
+            guard let items = agrupados[cat] else { return nil }
+            return (categoria: cat, items: items.sorted { $0.orden < $1.orden })
+        }
     }
 
     init(
@@ -38,25 +51,48 @@ final class HabitosViewModel {
         )
         habitos = habitoRepo.cargar()
         registros = registroRepo.cargar()
+        cargarOrdenesCategorias()
         resetearRachasRotas()
     }
 
     // MARK: — Acciones
 
     func agregar(_ habito: Habito) {
-        habitos.append(habito)
+        var nuevo = habito
+        let maxOrden = habitos.filter { $0.categoria == habito.categoria }.map(\.orden).max() ?? -1
+        nuevo.orden = maxOrden + 1
+        habitos.append(nuevo)
         habitoRepo.guardar(habitos)
+        if !ordenesCategorias.contains(habito.categoria) {
+            ordenesCategorias.append(habito.categoria)
+            guardarOrdenesCategorias()
+        }
     }
 
     func actualizar(_ habito: Habito) {
         guard let index = habitos.firstIndex(where: { $0.id == habito.id }) else { return }
+        let categoriaAntes = habitos[index].categoria
         habitos[index] = habito
         habitoRepo.guardar(habitos)
+        if categoriaAntes != habito.categoria {
+            if !ordenesCategorias.contains(habito.categoria) {
+                ordenesCategorias.append(habito.categoria)
+            }
+            if habitos.filter({ $0.categoria == categoriaAntes }).isEmpty {
+                ordenesCategorias.removeAll { $0 == categoriaAntes }
+            }
+            guardarOrdenesCategorias()
+        }
     }
 
     func eliminar(_ habito: Habito) {
+        let categoria = habito.categoria
         habitos.removeAll { $0.id == habito.id }
         habitoRepo.guardar(habitos)
+        if habitos.filter({ $0.categoria == categoria }).isEmpty {
+            ordenesCategorias.removeAll { $0 == categoria }
+            guardarOrdenesCategorias()
+        }
     }
 
     /// Registra una ocurrencia del hábito. Devuelve el ID del RegistroPuntos creado (para undo).
@@ -86,6 +122,26 @@ final class HabitosViewModel {
             habitos[i] = resultado.habitoRestaurado
         }
         registros = registroRepo.cargar()
+    }
+
+    // MARK: — Ordenamiento
+
+    func moverCategoria(from: IndexSet, to: Int) {
+        ordenesCategorias.move(fromOffsets: from, toOffset: to)
+        guardarOrdenesCategorias()
+    }
+
+    func moverHabito(enCategoria categoria: String, from: IndexSet, to: Int) {
+        var items = habitos
+            .filter { $0.categoria == categoria }
+            .sorted { $0.orden < $1.orden }
+        items.move(fromOffsets: from, toOffset: to)
+        for (nuevoOrden, item) in items.enumerated() {
+            if let i = habitos.firstIndex(where: { $0.id == item.id }) {
+                habitos[i].orden = nuevoOrden
+            }
+        }
+        habitoRepo.guardar(habitos)
     }
 
     // MARK: — Consultas del día
@@ -118,5 +174,19 @@ final class HabitosViewModel {
 
     func resetearRachasRotas() {
         habitos = registrarUseCase.resetearRachasRotas(habitos: habitos)
+    }
+
+    // MARK: — Privado
+
+    private func cargarOrdenesCategorias() {
+        let guardadas = JSONStore.load([String].self, fromFile: ordenCatFilename) ?? []
+        let todas = Set(habitos.map(\.categoria))
+        let conocidas = guardadas.filter { todas.contains($0) }
+        let nuevas = todas.subtracting(Set(guardadas)).sorted()
+        ordenesCategorias = conocidas + Array(nuevas)
+    }
+
+    private func guardarOrdenesCategorias() {
+        JSONStore.save(ordenesCategorias, toFile: ordenCatFilename)
     }
 }
