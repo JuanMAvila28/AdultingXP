@@ -192,7 +192,7 @@ struct PomodoroView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text(sesion.tipo.label)
                     .font(.subheadline)
-                Text(sesion.fechaInicio.formatted(date: .omitted, time: .shortened))
+                TiempoTranscurridoText(fecha: sesion.fechaInicio)
                     .font(.caption)
                     .foregroundStyle(Color.appSecondary)
             }
